@@ -15,6 +15,10 @@ public:
 
 	}
 
+	SubMesh() {
+
+	}
+
 	std::vector<unsigned int> elements;
 	Material material;
 
@@ -26,6 +30,7 @@ private:
 class Mesh {
 public:
 	Mesh(const std::vector<Vertex>& vertices, std::vector<SubMesh> newSubmeshes) : submeshes(newSubmeshes), position(0.0f), rotation(0.0f), scale(1.0f) {
+		moved = false;
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
 		setVertices(vertices);
@@ -38,6 +43,19 @@ public:
 		}
 
 		updateElements();		
+	}
+
+	Mesh(Mesh&& other) {
+		other.moved = true;
+		this->moved = false;
+		this->VAO = other.VAO;
+		this->VBO = other.VBO;
+		this->EBOs = other.EBOs;
+		this->submeshes = std::move(other.submeshes);
+		this->vertices = std::move(other.vertices);
+		this->position = other.position;
+		this->rotation = other.rotation;
+		this->scale = other.scale;
 	}
 
 	std::vector<Vertex>& getVertices() {
@@ -106,10 +124,12 @@ public:
 	}
 
 	void clear() {
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
-		glDeleteBuffers(submeshes.size(), EBOs);
-		delete[] EBOs;
+		if (!moved) {
+			glDeleteVertexArrays(1, &VAO);
+			glDeleteBuffers(1, &VBO);
+			glDeleteBuffers(submeshes.size(), EBOs);
+			delete[] EBOs;
+		}
 	}
 
 	glm::vec3 getPosition() const {
@@ -148,4 +168,5 @@ private:
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
+	bool moved;
 };
