@@ -9,6 +9,14 @@ public:
 
 	}
 
+	Material(const Material& other) : shaderProgram(other.shaderProgram), textures(other.textures) {
+
+	}
+
+	std::shared_ptr<ShaderProgram> getShaderProgram() const {
+		return shaderProgram;
+	}
+
 	void addTexture(std::string name, const std::shared_ptr<Texture>& texture) {
 		textures.push_back(make_pair(name, texture));
 	}

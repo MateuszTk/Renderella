@@ -7,29 +7,45 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "ShaderProgram.hpp"
+#include "Material.hpp"
+
+struct SubMesh {
+public:
+	SubMesh(const std::vector<unsigned int>& elements, const Material& material) : elements(elements), material(material) {
+
+	}
+
+	std::vector<unsigned int> elements;
+	Material material;
+
+	friend class Mesh;
+private:
+	unsigned int EBO;
+};
 
 class Mesh {
 public:
-	Mesh() : position(0.0f), rotation(0.0f), scale(1.0f) {
+	Mesh(const std::vector<Vertex>& vertices, std::vector<SubMesh> newSubmeshes) : submeshes(newSubmeshes), position(0.0f), rotation(0.0f), scale(1.0f) {
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
-	}
-
-	Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& elements) : position(0.0f), rotation(0.0f), scale(1.0f) {
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
 		setVertices(vertices);
-		setElements(elements);
+
+		this->EBOs = new unsigned int[newSubmeshes.size()];
+		glGenBuffers(newSubmeshes.size(), this->EBOs);
+
+		for (int i = 0; i < this->submeshes.size(); i++) {
+			submeshes[i].EBO = (this->EBOs)[i];
+		}
+
+		updateElements();		
 	}
 
 	std::vector<Vertex>& getVertices() {
 		return vertices;
 	}
 
-	std::vector<unsigned int>& getElements() {
-		return elements;
+	std::vector<SubMesh>& getSubmeshes() {
+		return submeshes;
 	}
 
 	void setVertices(const std::vector<Vertex>& vertices) {
@@ -51,15 +67,12 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void setElements(const std::vector<unsigned int>& elements) {
-		this->elements = elements;
-		updateElements();
-	}
-
 	void updateElements() {
 		glBindVertexArray(VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->elements.size() * sizeof(unsigned int), &(this->elements[0]), GL_STATIC_DRAW);
+		for (SubMesh& submesh : submeshes) {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, submesh.elements.size() * sizeof(unsigned int), &(submesh.elements[0]), GL_STATIC_DRAW);
+		}
 		glBindVertexArray(0);
 	}
 
@@ -81,16 +94,22 @@ public:
 
 		glm::mat4 finalTransformationMatrix = projection * view * model;
 
-		ShaderProgram::getCurrentProgram()->setMat4("transformations", finalTransformationMatrix);
+		for (auto& submesh : this->submeshes) {
+			submesh.material.use();
+			submesh.material.getShaderProgram()->setMat4("transformations", finalTransformationMatrix);
 
-		glDrawElements(GL_TRIANGLES, elements.size(), GL_UNSIGNED_INT, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
+			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
+		}
+
 		glBindVertexArray(0);
 	}
 
 	void clear() {
 		glDeleteVertexArrays(1, &VAO);
 		glDeleteBuffers(1, &VBO);
-		glDeleteBuffers(1, &EBO);
+		glDeleteBuffers(submeshes.size(), EBOs);
+		delete[] EBOs;
 	}
 
 	glm::vec3 getPosition() const {
@@ -122,9 +141,10 @@ public:
 	}
 
 private:
-	unsigned int VAO, VBO, EBO;
+	unsigned int* EBOs;
+	unsigned int VAO, VBO;
 	std::vector<Vertex> vertices;
-	std::vector<unsigned int> elements;
+	std::vector<SubMesh> submeshes;
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
