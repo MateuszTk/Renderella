@@ -5,11 +5,11 @@
 
 class Material {
 public:
-	Material(ShaderProgram* shaderProgram) : shaderProgram(shaderProgram) {
+	Material(const std::shared_ptr<ShaderProgram>& shaderProgram) : shaderProgram(shaderProgram) {
 
 	}
 
-	void addTexture(std::string name, Texture* texture) {
+	void addTexture(std::string name, const std::shared_ptr<Texture>& texture) {
 		textures.push_back(make_pair(name, texture));
 	}
 
@@ -23,6 +23,6 @@ public:
 	}
 
 private:
-	ShaderProgram* shaderProgram;
-	std::vector<std::pair<std::string, Texture*>> textures;
+	std::shared_ptr<ShaderProgram> shaderProgram;
+	std::vector<std::pair<std::string, std::shared_ptr<Texture>>> textures;
 };

@@ -25,15 +25,15 @@ int main() {
 
 	Shader<GL_VERTEX_SHADER> vertexShader("assets/shaders/vertex.vert", true);
 	Shader<GL_FRAGMENT_SHADER> fragmentShader("assets/shaders/fragment.frag", true);
-	ShaderProgram shaderProgram(vertexShader, fragmentShader);
+	auto shaderProgram = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexShader, fragmentShader));
 
-	Material material(&shaderProgram);
-	Texture texture1("assets/texture.png");
-	material.addTexture("texture1", &texture1);
+	Material material(shaderProgram);
+	auto texture1 = std::shared_ptr<Texture>(new Texture("assets/texture.png"));
+	material.addTexture("texture1", texture1);
 
-	Material material2(&shaderProgram);
-	Texture texture2("assets/texture1.png");
-	material2.addTexture("texture1", &texture2);
+	Material material2(shaderProgram);
+	auto texture2 = std::shared_ptr<Texture>(new Texture("assets/texture1.png"));
+	material2.addTexture("texture1", texture2);
 
 	cube.setPosition(glm::vec3(0.5f, 0.0f, 0.5f));
 	cube.setRotation(glm::vec3(0.0f, 0.0f, 45.0f));

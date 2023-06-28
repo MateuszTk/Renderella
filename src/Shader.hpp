@@ -46,7 +46,9 @@ public:
 	}
 
 	~Shader() {
-		glDeleteShader(id);
+		if (ok) {
+			glDeleteShader(id);
+		}
 	}
 
 private:
