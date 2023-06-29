@@ -6,12 +6,15 @@
 #include <sstream>
 #include <iostream>
 #include <glm/glm.hpp>
+#include <algorithm>
 
 class ObjLoader {
 public:
-	static Mesh load(std::string path) {
+	static std::vector<Mesh> load(std::string path) {
+		std::vector<Mesh> meshes;
 		std::vector<Vertex> vertices;
 		SubMesh subMesh;
+		unsigned int vertexOffset = 0;
 
 		std::ifstream file(path);
 		if (!file.is_open()) {
@@ -20,7 +23,15 @@ public:
 		else {
 			std::string line;
 			while (std::getline(file, line)) {
-				if (line[0] == 'v' && line[1] == ' ') {
+				if (line[0] == 'o') {
+					if (subMesh.elements.size() > 0) {
+						vertexOffset += vertices.size();
+						meshes.push_back(Mesh(vertices, { subMesh }));
+						vertices.clear();
+						subMesh.elements.clear();
+					}
+				}
+				else if (line[0] == 'v' && line[1] == ' ') {
 					std::istringstream iss(line.substr(2));
 					Vertex vertex;
 					iss >> vertex.x >> vertex.y >> vertex.z;
@@ -33,15 +44,35 @@ public:
 				}
 				else if (line[0] == 'f' && line[1] == ' ') {
 					std::istringstream iss(line.substr(2));
-					unsigned int vertexIndex;
-					while (iss >> vertexIndex) {
-						subMesh.elements.push_back(vertexIndex - 1);
+					//vertexstring is a string of the form "vertexIndex/textureIndex/normalIndex"
+					std::string vertexString;
+					while (iss >> vertexString) {						
+						unsigned int vertexIndex = std::stoi(vertexString);
+						unsigned int textureIndex = 0;
+						unsigned int normalIndex = 0;
+
+						int separatorIndex = vertexString.find('/');
+						if (separatorIndex != std::string::npos) {
+							std::string textureString = vertexString.substr(separatorIndex + 1);
+							textureIndex = std::stoi(textureString);
+
+							separatorIndex = textureString.find('/');
+							if (separatorIndex != std::string::npos) {
+								normalIndex = std::stoi(textureString.substr(separatorIndex + 1));
+							}
+						}
+
+						subMesh.elements.push_back(vertexIndex - 1 - vertexOffset);
 					}
 				}
 			}
 			file.close();
 		}
 
-		return std::move(Mesh(vertices, { subMesh }));
+		if (subMesh.elements.size() > 0) {
+			meshes.push_back(Mesh(vertices, { subMesh }));
+		}
+
+		return meshes;
 	}
 };

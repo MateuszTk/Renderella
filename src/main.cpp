@@ -32,7 +32,7 @@ int main() {
 
 	std::vector<Vertex> vertices = primitives::plane::planeVert;
 	std::vector<unsigned int> indices = primitives::plane::planeInd;
-	Mesh mesh(vertices, { 
+	Mesh plane(vertices, { 
 		SubMesh(indices, material)
 	});
 
@@ -46,25 +46,37 @@ int main() {
 	cube.setPosition(glm::vec3(0.5f, 0.0f, 0.5f));
 	cube.setRotation(glm::vec3(0.0f, 0.0f, 45.0f));
 	cube.setScale(glm::vec3(0.5f, 0.5f, 0.5f));
-	mesh.setPosition(glm::vec3(0.0f, -1.0f, 0.4f));
-	mesh.setRotation(glm::vec3(90.0f, 0.0f, 0.0f));
+	plane.setPosition(glm::vec3(0.0f, -1.0f, 0.4f));
+	plane.setRotation(glm::vec3(90.0f, 0.0f, 0.0f));
 
 	// monkey
-	Mesh monkey = ObjLoader::load("assets/monkey.obj");
+	Mesh monkey = std::move(ObjLoader::load("assets/monkey.obj")[0]);
 	Material monkeyMaterial(plainShaderProgram);
 	monkeyMaterial.addVec3("color", glm::vec3(1.0f, 1.0f, 0.5f));
 	monkey.getSubmeshes()[0].material = monkeyMaterial;
-
-	monkey.setPosition(glm::vec3(-0.5f, 0.0f, 0.5f));
+	monkey.setPosition(glm::vec3(-0.5f, 0.5f, 0.5f));
 	monkey.setScale(glm::vec3(0.5f, 0.5f, 0.5f));
+
+	auto meshes = ObjLoader::load("assets/doublecube.obj");
+	for (auto& mesh : meshes) {
+		for (auto& subMesh : mesh.getSubmeshes()) {
+			subMesh.material = monkeyMaterial;
+		}
+		mesh.setPosition(glm::vec3(0.0f, -0.5f, 0.5f));
+		mesh.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
+	}
 
 	while (window.frame(true, true)) {
 		cube.setRotation(glm::vec3(0, 0.2f, 0.2f) + cube.getRotation());
 		monkey.setRotation(glm::vec3(0, 0.2f, 0.2f) + monkey.getRotation());
 
 		cube.draw();
-		mesh.draw();
+		plane.draw();
 		monkey.draw();
+
+		for (auto& mesh : meshes) {
+			mesh.draw();
+		}
 	}
 
 	return 0;
