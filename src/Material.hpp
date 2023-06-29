@@ -6,11 +6,13 @@
 
 class Material {
 public:
-	Material(const std::shared_ptr<ShaderProgram>& shaderProgram) : shaderProgram(shaderProgram) {
+	Material(const std::shared_ptr<ShaderProgram>& shaderProgram, const std::string& name = "")
+		: shaderProgram(shaderProgram), name(name) {
 
 	}
 
-	Material(const Material& other) : shaderProgram(other.shaderProgram), textures(other.textures) {
+	Material(const Material& other) 
+		: shaderProgram(other.shaderProgram), textures(other.textures), name(other.name) {
 
 	}
 
@@ -34,6 +36,14 @@ public:
 		vec3s.push_back(make_pair(name, vec));
 	}
 
+	void setName(std::string name) {
+		this->name = name;
+	}
+
+	std::string getName() const {
+		return name;
+	}
+
 	void use() {
 		shaderProgram->use();
 		for (unsigned int i = 0; i < textures.size(); i++) {
@@ -50,4 +60,5 @@ private:
 	std::shared_ptr<ShaderProgram> shaderProgram;
 	std::vector<std::pair<std::string, std::shared_ptr<Texture>>> textures;
 	std::vector<std::pair<std::string, glm::vec3>> vec3s;
+	std::string name;
 };

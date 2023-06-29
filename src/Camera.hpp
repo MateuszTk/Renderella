@@ -5,7 +5,7 @@
 
 class Camera {
 public:
-	Camera(bool controllable = false, const glm::vec3& position = glm::vec3(0.0f), const glm::vec3& rotation = glm::vec3(0.0f), float fov = 50.0f, float farPlane = 200.0f, float nearPlane = 0.1f)
+	Camera(bool controllable = false, const glm::vec3& position = glm::vec3(0.0f), const glm::vec3& rotation = glm::vec3(0.0f), float fov = 65.0f, float farPlane = 400.0f, float nearPlane = 0.1f)
 		: cameraMatrix(1.0f), fov(fov), farPlane(farPlane), nearPlane(nearPlane), controllable(controllable) {
 		this->position = position;
 		this->rotation = rotation;
@@ -105,7 +105,7 @@ private:
 	float speed = 4.0f;
 	float sensitivity = 0.1f;
 
-	//variavles for mouse and keyboard input
+	//variables for mouse and keyboard input
 	glm::vec2 lastCursorPos = glm::vec2(0.0f);
 	glm::vec2 angle = glm::vec2(0.0f);
 	glm::vec3 direction = glm::vec3(0.0f, 0.0f, -1.0f);
