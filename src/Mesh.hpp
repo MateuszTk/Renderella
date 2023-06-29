@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "ShaderProgram.hpp"
 #include "Material.hpp"
+#include "Camera.hpp"
 
 struct SubMesh {
 public:
@@ -105,12 +106,7 @@ public:
 		model = glm::rotate(model, glm::radians(this->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::scale(model, this->scale);
 
-		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
-		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-		glm::mat4 finalTransformationMatrix = projection * view * model;
+		glm::mat4 finalTransformationMatrix = Camera::getActiveCamera()->getCameraMatrix() * model;
 
 		for (auto& submesh : this->submeshes) {
 			submesh.material.use();

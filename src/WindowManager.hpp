@@ -7,7 +7,8 @@
 
 class WindowManager {
 public:
-	WindowManager(int width, int height, std::string name) : width(width), height(height), lastFrameTime(0.0) {
+	WindowManager(int width, int height, std::string name) 
+		: width(width), height(height), lastFrameTime(0.0), fpsCount(0), lastFpsTime(0.0), deltaTime(0.00001) {
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -31,10 +32,6 @@ public:
 		glEnable(GL_DEPTH_TEST);
 	}
 
-	GLFWwindow* getWindow() {
-		return this->window;
-	}
-
 	bool frame(bool clear, bool showFps = false) {
 		glfwSwapBuffers(this->window);
 		glfwPollEvents();
@@ -44,11 +41,34 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
+		double time = glfwGetTime();
+		this->deltaTime = time - this->lastFrameTime;
+		this->lastFrameTime = time;
 		if (showFps) {
 			this->showFPS();
 		}
 
 		return !glfwWindowShouldClose(this->window);
+	}
+
+	GLFWwindow* getWindow() const {
+		return this->window;
+	}
+
+	double getDeltaTime() const {
+		return this->deltaTime;
+	}
+
+	int getWidth() const {
+		return this->width;
+	}
+
+	int getHeight() const {
+		return this->height;
+	}
+
+	float getAspectRatio() const {
+		return (float)this->width / (float)this->height;
 	}
 
 	~WindowManager() {
@@ -60,13 +80,18 @@ private:
 	int height;
 	GLFWwindow* window;
 	double lastFrameTime;
+	double deltaTime;
+
+	double lastFpsTime;
+	unsigned int fpsCount;
 
 	void showFPS() {
-		double currentFrameTime = glfwGetTime();
-		double deltaTime = currentFrameTime - this->lastFrameTime;
-		if (deltaTime >= 1.0) {
-			this->lastFrameTime = currentFrameTime;
-			glfwSetWindowTitle(this->window, (std::to_string(1000.0 / deltaTime) + " FPS").c_str());
+		this->lastFpsTime += this->deltaTime;
+		this->fpsCount++;
+		if (lastFpsTime >= 1.0) {
+			glfwSetWindowTitle(this->window, (std::to_string(this->fpsCount / this->lastFpsTime) + " FPS").c_str());
+			this->lastFpsTime = 0.0;
+			this->fpsCount = 0;
 		}
 	}
 };

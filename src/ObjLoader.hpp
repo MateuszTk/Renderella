@@ -53,12 +53,12 @@ public:
 
 						int separatorIndex = vertexString.find('/');
 						if (separatorIndex != std::string::npos) {
-							std::string textureString = vertexString.substr(separatorIndex + 1);
-							textureIndex = std::stoi(textureString);
+							vertexString = vertexString.substr(separatorIndex + 1);
+							textureIndex = std::stoi(vertexString);
 
-							separatorIndex = textureString.find('/');
+							separatorIndex = vertexString.find('/');
 							if (separatorIndex != std::string::npos) {
-								normalIndex = std::stoi(textureString.substr(separatorIndex + 1));
+								normalIndex = std::stoi(vertexString.substr(separatorIndex + 1));
 							}
 						}
 
@@ -72,6 +72,8 @@ public:
 		if (subMesh.elements.size() > 0) {
 			meshes.push_back(Mesh(vertices, { subMesh }));
 		}
+
+		std::cout << "[ObjLoader] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";
 
 		return meshes;
 	}

@@ -7,6 +7,7 @@
 #include "Texture.hpp"
 #include "Material.hpp"
 #include "ObjLoader.hpp"
+#include "Camera.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -66,7 +67,12 @@ int main() {
 		mesh.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
 	}
 
+	Camera camera(true);
+	camera.use();
+
 	while (window.frame(true, true)) {
+		camera.update(window);
+
 		cube.setRotation(glm::vec3(0, 0.2f, 0.2f) + cube.getRotation());
 		monkey.setRotation(glm::vec3(0, 0.2f, 0.2f) + monkey.getRotation());
 
