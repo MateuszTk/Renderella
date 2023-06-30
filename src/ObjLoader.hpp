@@ -8,19 +8,20 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include "Material.hpp"
+#include "PhongMat.hpp"
 #include "Texture.hpp"
 #include <memory>
 #include <map>
 
 class ObjLoader {
 public:
-	static std::unique_ptr<std::map<std::string, Material>> loadMtl(std::string path, std::shared_ptr<ShaderProgram> shaderProgram) {
+	static std::unique_ptr<std::map<std::string, PhongMat>> loadMtl(std::string path) {
 		if (path.find(".obj") != std::string::npos) {
 			path = path.substr(0, path.length() - 3) + "mtl";
 			std::cout << "[mtl] Loading mtl file: " << path << "\n";
 		}
 
-		auto materials = std::make_unique<std::map<std::string, Material>>();
+		auto materials = std::make_unique<std::map<std::string, PhongMat>>();
 		std::string directry = path.substr(0, path.find_last_of("/\\") + 1);
 
 		std::ifstream file(path);
@@ -36,7 +37,8 @@ public:
 					std::istringstream iss(line.substr(7));
 					iss >> currentMaterialName;
 					//std::cout << "Found material: " << currentMaterialName << "\n";
-					materials->insert({ currentMaterialName, Material(shaderProgram, currentMaterialName) });
+					PhongMat material(currentMaterialName);
+					materials->insert({ currentMaterialName, material });
 				}
 				else {
 					auto option = line.substr(0, 6);
@@ -50,13 +52,15 @@ public:
 
 		return materials;
 	}
-
-	static std::vector<Mesh> load(const std::string& path, std::shared_ptr<ShaderProgram> shaderProgram = nullptr) {
+	
+	// path: path to obj file; material: material template for creating new materials
+	static std::vector<Mesh> load(const std::string& path) {
 		std::vector<Mesh> meshes;
 		std::vector<Vertex> vertices;
 		std::vector<glm::vec2> textureCoords;
+		std::vector<glm::vec3> normals;
 		SubMesh subMesh;
-		std::unique_ptr<std::map<std::string, Material>> materials = nullptr;
+		std::unique_ptr<std::map<std::string, PhongMat>> materials = nullptr;
 		unsigned int vertexOffset = 0;
 
 		std::ifstream file(path);
@@ -76,6 +80,10 @@ public:
 					}
 					std::cout << '.';
 				}
+				else if (line[0] == 'g') {
+					//group
+					//TODO: implement with submeshes
+				}
 				else if (line[0] == 'v') {
 					if (line[1] == ' ') {
 						std::istringstream iss(line.substr(2));
@@ -88,6 +96,12 @@ public:
 						glm::vec2 uv;
 						iss >> uv.x >> uv.y;
 						textureCoords.push_back(uv);
+					}
+					else if (line[1] == 'n') {
+						std::istringstream iss(line.substr(3));
+						glm::vec3 normal;
+						iss >> normal.x >> normal.y >> normal.z;
+						normals.push_back(normal);
 					}
 				}
 				else if (line[0] == 'f' && line[1] == ' ') {
@@ -115,6 +129,11 @@ public:
 							vertices[localVertexIndex].textureX = textureCoords[textureIndex - 1].x;
 							vertices[localVertexIndex].textureY = textureCoords[textureIndex - 1].y;
 						}
+						if (normalIndex > 0) {
+							vertices[localVertexIndex].normalX = normals[normalIndex - 1].x;
+							vertices[localVertexIndex].normalY = normals[normalIndex - 1].y;
+							vertices[localVertexIndex].normalZ = normals[normalIndex - 1].z;
+						}
 						subMesh.elements.push_back(localVertexIndex);
 					}
 				}
@@ -132,7 +151,7 @@ public:
 				else if (line[0] == 'm' && line[1] == 't') {
 					//mtllib
 					std::string mtlPath = path.substr(0, path.find_last_of("/\\") + 1) + line.substr(7);
-					materials = loadMtl(mtlPath, shaderProgram);
+					materials = loadMtl(mtlPath);
 				}
 			}
 			file.close();

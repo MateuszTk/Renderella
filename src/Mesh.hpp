@@ -80,8 +80,10 @@ public:
 		//takes data from VBO and feeds it to the vertex shader
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
 		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6));
+		glEnableVertexAttribArray(2);
 
 		glBindVertexArray(0);
 	}
@@ -111,6 +113,8 @@ public:
 		for (auto& submesh : this->submeshes) {
 			submesh.material.use();
 			submesh.material.getShaderProgram()->setMat4("transformations", finalTransformationMatrix);
+			submesh.material.getShaderProgram()->setMat4("model", model);
+			submesh.material.getShaderProgram()->setMat3("normalMatrix", glm::transpose(glm::mat3(glm::inverse(model))));
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
 			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);

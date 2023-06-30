@@ -8,6 +8,7 @@
 #include "Material.hpp"
 #include "ObjLoader.hpp"
 #include "Camera.hpp"
+#include "PhongMat.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -16,16 +17,14 @@ int main() {
 	WindowManager window(1280, 720, "Window");
 
 	Shader<GL_VERTEX_SHADER> vertexShader("assets/shaders/vertex.vert", true);
-	Shader<GL_FRAGMENT_SHADER> fragmentShader("assets/shaders/textured.frag", true);
 	Shader<GL_FRAGMENT_SHADER> plainFragmentShader("assets/shaders/plain.frag", true);
-	auto texturedShaderProgram = std::make_shared<ShaderProgram>(vertexShader, fragmentShader);
 	auto plainShaderProgram = std::make_shared<ShaderProgram>(vertexShader, plainFragmentShader);
 
-	Material material(texturedShaderProgram);
+	PhongMat material;
 	auto texture1 = std::make_shared<Texture>("assets/texture.png");
 	material.addTexture("texture1", texture1);
 
-	Material material2(texturedShaderProgram);
+	PhongMat material2;
 	auto texture2 = std::make_shared<Texture>("assets/texture1.png");
 	material2.addTexture("texture1", texture2);
 
@@ -43,12 +42,12 @@ int main() {
 	// monkey
 	Mesh monkey = std::move(ObjLoader::load("assets/monkey.obj")[0]);
 	Material monkeyMaterial(plainShaderProgram);
-	monkeyMaterial.addVec3("color", glm::vec3(1.0f, 1.0f, 0.5f));
+	monkeyMaterial.setVec3("color", glm::vec3(1.0f, 1.0f, 0.5f));
 	monkey.getSubmeshes()[0].material = monkeyMaterial;
 	monkey.setPosition(glm::vec3(-1.5f, 2.5f, 0.5f));
 
 	// sponza
-	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj", texturedShaderProgram);
+	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
 
 	Camera camera(true, glm::vec3(0.0f, 1.0f, 0.0f));
 	camera.use();
@@ -63,6 +62,8 @@ int main() {
 		monkey.draw();
 
 		for (auto& mesh : sponza) {
+			//TODO: do this automatically
+			mesh.getSubmeshes()[0].material.setVec3("viewPos", camera.getPosition());
 			mesh.draw();
 		}
 	}

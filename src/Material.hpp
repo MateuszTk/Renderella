@@ -3,6 +3,7 @@
 #include <memory>
 #include "ShaderProgram.hpp"
 #include "Texture.hpp"
+#include <map>
 
 class Material {
 public:
@@ -12,7 +13,7 @@ public:
 	}
 
 	Material(const Material& other) 
-		: shaderProgram(other.shaderProgram), textures(other.textures), name(other.name) {
+		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name) {
 
 	}
 
@@ -28,12 +29,16 @@ public:
 		return shaderProgram;
 	}
 
-	void addTexture(std::string name, const std::shared_ptr<Texture>& texture) {
+	void addTexture(const std::string& name, const std::shared_ptr<Texture>& texture) {
 		textures.push_back(make_pair(name, texture));
 	}
 
-	void addVec3(std::string name, glm::vec3 vec) {
-		vec3s.push_back(make_pair(name, vec));
+	void setVec3(const std::string& name, const glm::vec3& vec) {
+		vec3s[name] = vec;
+	}
+
+	void setFloat(const std::string& name, float value) {
+		floats[name] = value;
 	}
 
 	void setName(std::string name) {
@@ -51,14 +56,18 @@ public:
 			textures[i].second->bind();
 			shaderProgram->setInt(textures[i].first, i);
 		}
-		for (unsigned int i = 0; i < vec3s.size(); i++) {
-			shaderProgram->setVec3(vec3s[i].first, vec3s[i].second);
+		for (auto& vect : vec3s) {
+			shaderProgram->setVec3(vect.first, vect.second);
+		}
+		for (auto& flt : floats) {
+			shaderProgram->setFloat(flt.first, flt.second);
 		}
 	}
 
-private:
+protected:
 	std::shared_ptr<ShaderProgram> shaderProgram;
 	std::vector<std::pair<std::string, std::shared_ptr<Texture>>> textures;
-	std::vector<std::pair<std::string, glm::vec3>> vec3s;
+	std::map<std::string, glm::vec3> vec3s;
+	std::map<std::string, float> floats;
 	std::string name;
 };

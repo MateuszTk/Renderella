@@ -5,10 +5,10 @@
 namespace primitives {
 	namespace plane {
 		const std::vector<Vertex> planeVert {
-			{ -0.5f, -0.5f, 0.0f, 0.0f, 0.0f },
-			{ 0.5f, -0.5f, 0.0f, 1.0f, 0.0f },
-			{ 0.5f, 0.5f, 0.0f, 1.0f, 1.0f },
-			{ -0.5f, 0.5f, 0.0f, 0.0f, 1.0f }
+			{ -0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f },
+			{ 0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f },
+			{ 0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f, 1.0f },
+			{ -0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f }
 		};
 
 		const std::vector<unsigned int> planeInd {
@@ -20,15 +20,15 @@ namespace primitives {
 	namespace cube {
 		const std::vector<Vertex> cubeVert {
 			//front
-			{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f },
-			{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f },
-			{ 0.5f, 0.5f, 0.5f, 1.0f, 1.0f },
-			{ -0.5f, 0.5f, 0.5f, 0.0f, 1.0f },
+			{ -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.0f, 0.0f },
+			{ 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 1.0f, 0.0f },
+			{ 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f },
+			{ -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.0f, 1.0f },
 			//back
-			{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f },
-			{ 0.5f, -0.5f, -0.5f, 1.0f, 0.0f },
-			{ 0.5f, 0.5f, -0.5f, 1.0f, 1.0f },
-			{ -0.5f, 0.5f, -0.5f, 0.0f, 1.0f }
+			{ -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f },
+			{ 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 1.0f, 0.0f },
+			{ 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 1.0f, 1.0f },
+			{ -0.5f, 0.5f, -0.5f,  -0.5f, 0.5f, -0.5f, 0.0f, 1.0f }
 		};
 
 		const std::vector<unsigned int> cubeInd {
