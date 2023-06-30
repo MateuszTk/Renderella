@@ -4,6 +4,8 @@
 #include "ShaderProgram.hpp"
 #include "Texture.hpp"
 #include <map>
+#include "Light.hpp"
+#include "Camera.hpp"
 
 class Material {
 public:
@@ -13,7 +15,7 @@ public:
 	}
 
 	Material(const Material& other) 
-		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name) {
+		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms) {
 
 	}
 
@@ -49,6 +51,22 @@ public:
 		return name;
 	}
 
+	void setIncludeLightsUniforms(bool includeLightsUniforms) {
+		this->includeLightsUniforms = includeLightsUniforms;
+	}
+
+	bool getIncludeLightsUniforms() const {
+		return includeLightsUniforms;
+	}
+
+	void setIncludeCameraPosUniform(bool includeCameraPosUniform) {
+		this->includeCameraPosUniform = includeCameraPosUniform;
+	}
+
+	bool getIncludeCameraPosUniform() const {
+		return includeCameraPosUniform;
+	}
+
 	void use() {
 		shaderProgram->use();
 		for (unsigned int i = 0; i < textures.size(); i++) {
@@ -62,6 +80,14 @@ public:
 		for (auto& flt : floats) {
 			shaderProgram->setFloat(flt.first, flt.second);
 		}
+		if (includeLightsUniforms) {
+			shaderProgram->setVec3s("lightPos", Light::getLightPositions(), Light::getMaxLights());
+			shaderProgram->setVec3s("lightColor", Light::getLightColors(), Light::getMaxLights());
+			shaderProgram->setInt("usedLights", Light::getUsedLightsCnt());
+		}
+		if (includeCameraPosUniform) {
+			shaderProgram->setVec3("viewPos", Camera::getActiveCamera()->getPosition());
+		}
 	}
 
 protected:
@@ -70,4 +96,6 @@ protected:
 	std::map<std::string, glm::vec3> vec3s;
 	std::map<std::string, float> floats;
 	std::string name;
+	bool includeLightsUniforms = false;
+	bool includeCameraPosUniform = false;
 };

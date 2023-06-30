@@ -6,11 +6,11 @@ public:
 	PhongMat(const std::string& name = "")
 		: Material(getShaderProgram(), name) {
 
-		setVec3("lightPos", glm::vec3(0.0f, 3.0f, 0.0f));
-		setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+		this->includeLightsUniforms = true;
+		this->includeCameraPosUniform = true;
 		setVec3("viewPos", glm::vec3(0.0f, 0.0f, 0.0f));
 
-		setAmbient(glm::vec3(0.1f, 0.1f, 0.1f));
+		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
 		setSpecular(0.5f);
 		setShininess(32.0f);
 	}

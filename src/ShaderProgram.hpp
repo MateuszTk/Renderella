@@ -6,6 +6,7 @@
 #include "Shader.hpp"
 #include <iostream>
 #include <string>
+#include <vector>
 
 class ShaderProgram {
 public:
@@ -62,6 +63,14 @@ public:
 
 	void setVec3(const std::string& name, const glm::vec3& value) {
 		glUniform3f(glGetUniformLocation(this->id, name.c_str()), value.x, value.y, value.z);
+	}
+
+	void setVec3s(const std::string& name, std::vector<glm::vec3> values) {
+		glUniform3fv(glGetUniformLocation(this->id, name.c_str()), values.size(), glm::value_ptr(values[0]));
+	}
+
+	void setVec3s(const std::string& name, glm::vec3* values, int size) {
+		glUniform3fv(glGetUniformLocation(this->id, name.c_str()), size, glm::value_ptr(values[0]));
 	}
 
 	void setVec4(const std::string& name, const glm::vec4& value) {
