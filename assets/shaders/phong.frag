@@ -15,15 +15,40 @@ uniform vec3 ambient;
 uniform float specular;
 uniform float shininess;
 
-uniform sampler2D texture1;
+uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+
+vec3 rotateWithSurface(vec3 normal, vec3 point)
+{
+    vec3 up = vec3(0.0, 1.0, 0.0); // Default rotation axis
+    
+    // Check if the normal is parallel to the up vector
+    if (dot(normal, up) > 0.999)
+    {
+        return point; // No rotation needed
+    }
+    
+    vec3 rotationAxis = normalize(cross(up, normal));
+    float rotationAngle = acos(dot(up, normal));
+    
+    vec3 rotatedVector = point * cos(rotationAngle) + cross(rotationAxis, point) * sin(rotationAngle) + rotationAxis * dot(rotationAxis, point) * (1.0 - cos(rotationAngle));
+    
+    return rotatedVector;
+}
+
+
 
 void main() {
-	vec4 objectColor = texture(texture1, TexCoord);
+	vec4 objectColor = texture(diffuseMap, TexCoord);
 	if (objectColor.a < 0.1) {
 		discard;
 	}
 
+	vec3 normalColor = normalize(texture(normalMap, TexCoord).xzy * vec3(2.0) - vec3(1.0)) * vec3(-1.0, 1.0, -1.0);
+
+	//TODO: this way of calculationg the normals is not correct
 	vec3 norm = normalize(Normal);
+	norm = normalize(rotateWithSurface(norm, normalColor.xyz));
 
 	for (int i = 0; i < usedLights; i++) {
 		// from light to fragment

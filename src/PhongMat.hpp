@@ -20,6 +20,14 @@ public:
 
 	}
 
+	void addDiffuseMap(const std::shared_ptr<Texture>& texture) {
+		addTexture("diffuseMap", texture);
+	}
+
+	void addNormalMap(const std::shared_ptr<Texture>& texture) {
+		addTexture("normalMap", texture);
+	}
+
 	void setSpecular(float specular) {
 		setFloat("specular", specular);
 	}

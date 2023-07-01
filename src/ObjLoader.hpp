@@ -40,11 +40,19 @@ public:
 					PhongMat material(currentMaterialName);
 					materials->insert({ currentMaterialName, material });
 				}
+				else if (line[0] == 'N' && line[1] == 's') {
+					float shininess = std::stof(line.substr(3));
+					materials->at(currentMaterialName).setShininess(shininess);
+				}
 				else {
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
 						std::string texturePath = directry + line.substr(7);
-						materials->at(currentMaterialName).addTexture("texture1", std::make_shared<Texture>(texturePath));
+						materials->at(currentMaterialName).addDiffuseMap(std::make_shared<Texture>(texturePath));
+					}
+					else if (option == "map_Bu") {
+						std::string texturePath = directry + line.substr(9);
+						materials->at(currentMaterialName).addNormalMap(std::make_shared<Texture>(texturePath));
 					}
 				}
 			}
