@@ -96,7 +96,7 @@ public:
 					if (line[1] == ' ') {
 						std::istringstream iss(line.substr(2));
 						Vertex vertex;
-						iss >> vertex.x >> vertex.y >> vertex.z;
+						iss >> vertex.position.x >> vertex.position.y >> vertex.position.z;
 						vertices.push_back(vertex);
 					}
 					else if (line[1] == 't') {
@@ -134,16 +134,43 @@ public:
 
 						unsigned int localVertexIndex = vertexIndex - 1 - vertexOffset;
 						if (textureIndex > 0) {
-							vertices[localVertexIndex].textureX = textureCoords[textureIndex - 1].x;
-							vertices[localVertexIndex].textureY = textureCoords[textureIndex - 1].y;
+							vertices[localVertexIndex].texture = textureCoords[textureIndex - 1];
 						}
 						if (normalIndex > 0) {
-							vertices[localVertexIndex].normalX = normals[normalIndex - 1].x;
-							vertices[localVertexIndex].normalY = normals[normalIndex - 1].y;
-							vertices[localVertexIndex].normalZ = normals[normalIndex - 1].z;
+							vertices[localVertexIndex].normal = normals[normalIndex - 1];
 						}
 						subMesh.elements.push_back(localVertexIndex);
 					}
+					// calculate tangent
+					Vertex& vert0 = vertices[subMesh.elements[subMesh.elements.size() - 3]];
+					Vertex& vert1 = vertices[subMesh.elements[subMesh.elements.size() - 2]];
+					Vertex& vert2 = vertices[subMesh.elements[subMesh.elements.size() - 1]];
+
+					glm::vec3 v0 = vert0.position;
+					glm::vec3 v1 = vert1.position;
+					glm::vec3 v2 = vert2.position;
+
+					glm::vec2 uv0 = vert0.texture;
+					glm::vec2 uv1 = vert1.texture;
+					glm::vec2 uv2 = vert2.texture;
+
+					glm::vec3 edge1 = v1 - v0;
+					glm::vec3 edge2 = v2 - v0;
+
+					glm::vec2 deltaUV1 = uv1 - uv0;
+					glm::vec2 deltaUV2 = uv2 - uv0;
+
+					float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+					glm::vec3 tangent = (edge1 * deltaUV2.y - edge2 * deltaUV1.y) * r;
+					glm::vec3 bitangent = (edge2 * deltaUV1.x - edge1 * deltaUV2.x) * r;
+
+					vert0.tangent = tangent;
+					vert1.tangent = tangent;
+					vert2.tangent = tangent;
+
+					vert0.bitangent = bitangent;
+					vert1.bitangent = bitangent;
+					vert2.bitangent = bitangent;
 				}
 				else if (line[0] == 'u' && line[1] == 's') {
 					//usemtl

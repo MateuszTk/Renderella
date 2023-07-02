@@ -1,12 +1,10 @@
 #pragma once
+#include <glm/glm.hpp>
 
 struct Vertex{
-	float x;
-	float y;
-	float z;
-	float normalX;
-	float normalY;
-	float normalZ;
-	float textureX;
-	float textureY;
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 texture;
+	glm::vec3 tangent;
+	glm::vec3 bitangent;
 };
