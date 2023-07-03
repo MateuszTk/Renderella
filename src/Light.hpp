@@ -7,21 +7,27 @@
 
 class Light {
 public:
-	Light(const glm::vec3& pos, const glm::vec3& color, float intensity = 1.0f) : pos(pos), color(color), intensity(intensity) {
+	enum class Type {
+		POINT = 0,
+		DIRECTIONAL = 1
+	};
+
+	Light(Type type, const glm::vec3& pos, const glm::vec3& color, const glm::vec3& direction = glm::vec3(0.0f), float intensity = 1.0f) : type(type), pos(pos), color(color), direction(direction), intensity(intensity) {
 		if (usedLights >= maxLights) {
 			std::cout << "Maximum number of lights reached\n";
 		}
 		else {
 			lights[usedLights] = this;
-			lightPositions[usedLights] = pos;
+			lightPositions[usedLights] = glm::vec4(pos, (int)type);
 			lightColors[usedLights] = color * intensity;
+			lightDirections[usedLights] = direction;
 			usedLights++;
 		}
 	}
 
 	~Light() {
 		if (usedLights > 1) {
-			// remove this light from the vector by swapping it with the last element and then popping it
+			// remove this light by swapping it with the last element
 			int index = 0;
 			while (index < usedLights && lights[index] != this) {
 				index++;
@@ -30,6 +36,7 @@ public:
 				lights[index] = lights[usedLights - 1];
 				lightPositions[index] = lightPositions[usedLights - 1];
 				lightColors[index] = lightColors[usedLights - 1];
+				lightDirections[index] = lightDirections[usedLights - 1];
 				usedLights--;
 			}
 		}
@@ -65,16 +72,29 @@ public:
 		update();
 	}
 
+	Type getType() const {
+		return type;
+	}
+
+	void setType(Type type) {
+		this->type = type;
+		update();
+	}
+
 	static Light** getLights() {
 		return lights;
 	}
 
-	static glm::vec3* getLightPositions() {
+	static glm::vec4* getLightPositions() {
 		return lightPositions;
 	}
 
 	static glm::vec3* getLightColors() {
 		return lightColors;
+	}
+
+	static glm::vec3* getLightDirections() {
+		return lightDirections;
 	}
 
 	static int getUsedLightsCnt() {
@@ -88,12 +108,19 @@ public:
 private:
 	glm::vec3 pos;
 	glm::vec3 color;
+	glm::vec3 direction;
+	Type type;
 	float intensity;
 	const static int maxLights = 8;
 	static int usedLights;
 	static Light* lights[maxLights];
-	static glm::vec3 lightPositions[maxLights];
+
+	// the w component of the light position is used to store the light type
+	static glm::vec4 lightPositions[maxLights];
+
 	static glm::vec3 lightColors[maxLights];
+
+	static glm::vec3 lightDirections[maxLights];
 
 	void update() {
 		int index = 0;
@@ -101,8 +128,9 @@ private:
 			index++;
 		}
 		if (index < usedLights) {
-			lightPositions[index] = pos;
+			lightPositions[index] = glm::vec4(pos, (float)type);
 			lightColors[index] = color * intensity;
+			lightDirections[index] = direction;
 		}
 	}
 };

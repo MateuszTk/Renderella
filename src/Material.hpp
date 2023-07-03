@@ -81,8 +81,9 @@ public:
 			shaderProgram->setFloat(flt.first, flt.second);
 		}
 		if (includeLightsUniforms) {
-			shaderProgram->setVec3s("lightPos", Light::getLightPositions(), Light::getMaxLights());
+			shaderProgram->setVec4s("lightPos", Light::getLightPositions(), Light::getMaxLights());
 			shaderProgram->setVec3s("lightColor", Light::getLightColors(), Light::getMaxLights());
+			shaderProgram->setVec3s("lightDir", Light::getLightDirections(), Light::getMaxLights());
 			shaderProgram->setInt("usedLights", Light::getUsedLightsCnt());
 		}
 		if (includeCameraPosUniform) {
