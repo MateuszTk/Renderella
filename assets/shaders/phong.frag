@@ -3,7 +3,6 @@
 out vec4 FragColor;
 
 in vec3 FragPos;
-in vec3 Normal;
 in vec2 TexCoord;
 in mat3 TBN;
 
@@ -21,12 +20,12 @@ uniform sampler2D normalMap;
 
 void main() {
 	vec4 objectColor = texture(diffuseMap, TexCoord);
-	if (objectColor.a < 0.1) {
+	if (objectColor.a < 0.5) {
 		discard;
 	}
 
-	vec3 normalColor = texture(normalMap, TexCoord).rgb * 2.0 - 1.0;
-	vec3 norm = normalize(TBN * normalColor);
+	vec3 norm = texture(normalMap, TexCoord).rgb * 2.0 - 1.0;
+	norm = normalize(TBN * norm);
 
 	for (int i = 0; i < usedLights; i++) {
 		// from light to fragment

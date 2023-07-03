@@ -167,7 +167,7 @@ public:
 					vert0.tangent = tangent;
 					vert1.tangent = tangent;
 					vert2.tangent = tangent;
-
+					// TODO: bitangent could be calculated in shader, but for some reason it produces artifacts
 					vert0.bitangent = bitangent;
 					vert1.bitangent = bitangent;
 					vert2.bitangent = bitangent;
@@ -191,6 +191,12 @@ public:
 			}
 			file.close();
 			std::cout << '\n';
+		}
+
+		for (Vertex& vertex : vertices) {
+			vertex.normal = glm::normalize(vertex.normal);
+			vertex.tangent = glm::normalize(vertex.tangent);
+			vertex.bitangent = glm::normalize(vertex.bitangent);
 		}
 
 		if (subMesh.elements.size() > 0) {

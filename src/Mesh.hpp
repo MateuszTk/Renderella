@@ -118,7 +118,6 @@ public:
 			submesh.material.use();
 			submesh.material.getShaderProgram()->setMat4("transformations", finalTransformationMatrix);
 			submesh.material.getShaderProgram()->setMat4("model", model);
-			submesh.material.getShaderProgram()->setMat3("normalMatrix", glm::transpose(glm::mat3(glm::inverse(model))));
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
 			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
