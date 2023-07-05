@@ -32,10 +32,20 @@ vec3 worldFragmentPos(vec3 fragPos, vec3 viewDir, float depthValue) {
 float directionalShadow(vec4 lightSpacePos, int lightIndex) {
 	vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
 	projCoords = projCoords * 0.5 + 0.5;
-	float closestDepth = texture(lightDepth, projCoords.xy).r;
+	
 	float currentDepth = projCoords.z;
 	float bias = 0.004;
-	float shadow = (currentDepth - bias > closestDepth ? 1.0 : 0.0);
+
+	const int kernelSize = 1;
+	vec2 texelSize = 1.0 / textureSize(lightDepth, 0);
+	float shadow = 0.0;
+	for (int y = -kernelSize; y <= kernelSize; y += 1) {
+		for (int x = -kernelSize; x <= kernelSize; x += 1) {
+			float closestDepth = texture(lightDepth, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += (currentDepth - bias > closestDepth ? 1.0 : 0.0);
+		}
+	}
+	shadow /= (2 * kernelSize + 1) * (2 * kernelSize + 1);
 	return shadow;
 }
 
@@ -43,16 +53,18 @@ void main() {
 	float depthValue = texture(depthTexture, TexCoords).r;
 	vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
 
-	vec4 light = vec4(0.2);
+	vec3 light = vec3(0.0);
 
 	for (int i = 0; i < usedLights; i++){
 		int lightType = int(lightPos[i].w);
 		// Directional light
 		if (lightType == 1) {
 			vec4 lightSpacePos = lightSpaceMatrix[i] * vec4(worldPixelPos, 1.0);
-			light += vec4(lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i)), 1.0);
+			light += lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i));
 		}
 	}
 	
+	light += vec3(0.2);
+
 	FragColor = vec4(texture(screenTexture, TexCoords).rgb * light.rgb, 1.0);
 }
