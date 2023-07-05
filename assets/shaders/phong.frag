@@ -1,6 +1,7 @@
 #version 330 core
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 FragLight;
 
 in vec3 FragPos;
 in vec2 TexCoord;
@@ -28,6 +29,7 @@ void main() {
 	vec3 norm = texture(normalMap, TexCoord).rgb * 2.0 - 1.0;
 	norm = normalize(TBN * norm);
 
+	vec3 light = vec3(0.0);
 	for (int i = 0; i < usedLights; i++) {
 		int lightType = int(lightPos[i].w);
 		
@@ -41,6 +43,10 @@ void main() {
 		}
 		float diff = max(dot(norm, direction), 0.0);
 		vec3 diffusev = diff * lightColor[i];
+		if(lightType == 1){
+			//more light from sun is added later in deffered pass
+			diffusev *= 0.28;
+		}
 
 		vec3 viewDir = normalize(viewPos - FragPos);
 		vec3 reflectDir = reflect(-direction, norm);
@@ -53,9 +59,9 @@ void main() {
 			attenuation = 1.0 / (1.0 + 0.14 * distance + 0.07 * distance * distance);
 		}
 
-		vec3 result = (diffusev + specularv) * attenuation;
-		FragColor += vec4(result, 1.0f);
+		light += (diffusev + specularv) * attenuation;
 	}
 
-	FragColor = vec4((FragColor.rgb + ambient) * objectColor.rgb, 1.0f);
+	FragColor = vec4(objectColor.rgb, 1.0f);
+	FragLight = vec4(light, 1.0f);
 }

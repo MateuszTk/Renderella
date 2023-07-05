@@ -10,18 +10,23 @@
 
 class Framebuffer {
 public:
-	Framebuffer(unsigned int width, unsigned int height, bool color) : width(width), height(height) {
+	Framebuffer(unsigned int width, unsigned int height, int colorAttachments) : width(width), height(height) {
 		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-		if (color) {
-			texture = std::make_shared<Texture>(width, height);
-			texture->bind();
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexture(), 0);
-			texture->unbind();
+		if (colorAttachments > 0) {
+			colorTexs.reserve(colorAttachments);
+			for (int i = 0; i < colorAttachments; i++) {
+				auto colorTex = std::make_shared<Texture>(width, height);
+				colorTex->bind();
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorTex->getTexture(), 0);
+				colorTex->unbind();
+				colorTexs.push_back(colorTex);
+				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+			}
+			glDrawBuffers(colorAttachments, attachments.data());
 		}
 		else {
-			texture = nullptr;
 			glDrawBuffer(GL_NONE);
 			glReadBuffer(GL_NONE);
 		}
@@ -43,20 +48,23 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
+	// Produces a mesh with a plane that covers the entire screen with the framebuffer's color and depth textures.
 	Mesh produceFbPlane(const char* vert, const char* frag) {
 		Shader<GL_VERTEX_SHADER> screenVert(vert, true);
 		Shader<GL_FRAGMENT_SHADER> screenFrag(frag, true);
 		auto screenShader = std::make_shared<ShaderProgram>(screenVert, screenFrag);
 
 		Material planeMat(screenShader);
-		planeMat.addTexture("screenTexture", texture);
+		for (int i = 0; i < colorTexs.size(); i++) {
+			planeMat.addTexture("screenTexture" + std::to_string(i), colorTexs[i]);
+		}
 		planeMat.addTexture("depthTexture", depthTex);
 		SubMesh planeSub(primitives::plane::planeInd, planeMat);
 		return Mesh(primitives::plane::planeVert, { planeSub });
 	}
 
-	std::shared_ptr<Texture> getTexture() {
-		return texture;
+	const std::vector<std::shared_ptr<Texture>>& getColorTexs() {
+		return colorTexs;
 	}
 
 	std::shared_ptr<Texture> getDepthTex() {
@@ -85,6 +93,7 @@ public:
 private:
 	unsigned int fbo;
 	std::shared_ptr<Texture> depthTex;
-	std::shared_ptr<Texture> texture;
+	std::vector<std::shared_ptr<Texture>> colorTexs;
+	std::vector<unsigned int> attachments;
 	int width, height;
 };

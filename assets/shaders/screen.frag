@@ -5,8 +5,13 @@ in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 CameraRay;
 
-uniform sampler2D screenTexture;
+// color
+uniform sampler2D screenTexture0;
+// light
+uniform sampler2D screenTexture1;
+// depth
 uniform sampler2D depthTexture;
+// light depth
 uniform sampler2D lightDepth;
 
 uniform vec4 lightPos[8];
@@ -64,7 +69,10 @@ void main() {
 		}
 	}
 	
+	// Ambient light
 	light += vec3(0.2);
 
-	FragColor = vec4(texture(screenTexture, TexCoords).rgb * light.rgb, 1.0);
+	vec3 lightData = texture(screenTexture1, TexCoords).rgb;
+	vec3 color = texture(screenTexture0, TexCoords).rgb;
+	FragColor = vec4(color * (light + lightData), 1.0);
 }
