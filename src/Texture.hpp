@@ -15,7 +15,6 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 
-		int width, height, nrChannels;
 		stbi_set_flip_vertically_on_load(true);
 		unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 		if (data) {
@@ -37,7 +36,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	Texture(int width, int height, const GLvoid* data = NULL) {
+	Texture(int width, int height, const GLvoid* data = NULL) : width(width), height(height), nrChannels(3) {
 		this->master = true;
 		glGenTextures(1, &this->texture);
 		glBindTexture(GL_TEXTURE_2D, this->texture);
@@ -49,7 +48,18 @@ public:
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	Texture() {
+		this->width = 0;
+		this->height = 0;
+		this->nrChannels = 0;
+		this->master = true;
+		glGenTextures(1, &this->texture);
+	}
+
 	Texture(Texture&& other) {
+		this->width = other.width;
+		this->height = other.height;
+		this->nrChannels = other.nrChannels;
 		this->texture = other.texture;
 		this->master = true;
 		other.master = false;
@@ -67,6 +77,18 @@ public:
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	int getWidth() const {
+		return this->width;
+	}
+
+	int getHeight() const {
+		return this->height;
+	}
+
+	int getNrChannels() const {
+		return this->nrChannels;
+	}
+
 	~Texture() {
 		if (this->master) {
 			glDeleteTextures(1, &this->texture);
@@ -76,4 +98,5 @@ public:
 private:
 	unsigned int texture;
 	bool master;
+	int width, height, nrChannels;
 };

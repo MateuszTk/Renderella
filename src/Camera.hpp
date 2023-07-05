@@ -5,41 +5,65 @@
 
 class Camera {
 public:
-	Camera(bool controllable = false, const glm::vec3& position = glm::vec3(0.0f), const glm::vec3& rotation = glm::vec3(0.0f), float fov = 65.0f, float farPlane = 400.0f, float nearPlane = 0.1f)
-		: cameraMatrix(1.0f), fov(fov), farPlane(farPlane), nearPlane(nearPlane), controllable(controllable) {
+	enum class ProjectionType {
+		PERSPECTIVE,
+		ORTHOGRAPHIC
+	};
+
+	Camera(ProjectionType projType, float aspectRatio, bool controllable = false, const glm::vec3& position = glm::vec3(0.0f), const glm::vec3& direction = glm::vec3(0.0f, 0.0f, 1.0f), float fov = 65.0f, float farPlane = 400.0f, float nearPlane = 0.1f)
+		: projType(projType), cameraMatrix(1.0f), aspectRatio(aspectRatio), fov(fov), farPlane(farPlane), nearPlane(nearPlane), controllable(controllable) {
 		this->position = position;
-		this->rotation = rotation;
+		this->direction = direction;
 	}
 
 	const glm::vec3& getPosition() const {
 		return position;
 	}
 
-	const glm::vec3& getRotation() const {
-		return rotation;
+	const glm::vec3& getDirection() const {
+		return direction;
 	}
 
 	void setPosition(const glm::vec3& position) {
 		this->position = position;
+		updateMatrix();
 	}
 
-	void setRotation(const glm::vec3& rotation) {
-		this->rotation = rotation;
+	void setDirection(const glm::vec3& direction) {
+		this->direction = direction;
+		updateMatrix();
+	}
+
+	void setAspectRatio(float aspectRatio) {
+		this->aspectRatio = aspectRatio;
+		updateMatrix();
+	}
+
+	float getAspectRatio() const {
+		return this->aspectRatio;
 	}
 
 	void update(const WindowManager& windowManager) {
 		if (this->controllable) {
 			processInput(windowManager);
-			updateMatrix(windowManager);
-		}		
+		}
+		updateMatrix();
 	}
 
-	void use() {
+	virtual void use() {
 		activeCamera = this;
 	}
 
 	const glm::mat4& getCameraMatrix() {
 		return this->cameraMatrix;
+	}
+
+	const glm::mat4& getViewMatrix() {
+		return this->viewMatrix;
+	}
+
+	const glm::mat4& getProjectionMatrix() {
+		return this->projectionMatrix;
 	}
 
 	static Camera* getActiveCamera() {
@@ -48,6 +72,7 @@ public:
 
 	void setFov(float fov) {
 		this->fov = fov;
+		updateMatrix();
 	}
 
 	float getFov() const {
@@ -91,12 +116,22 @@ public:
 		this->controllable = controllable;
 	}
 
-private:
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::mat4 cameraMatrix;
-	static Camera* activeCamera;
+	~Camera() {
+		if (activeCamera == this) {
+			activeCamera = nullptr;
+		}
+	}
 
+protected:
+	glm::vec3 position;	
+	glm::mat4 cameraMatrix;
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
+	static Camera* activeCamera;
+	glm::vec3 direction;
+	ProjectionType projType;
+
+	float aspectRatio;
 	float fov;
 	float nearPlane;
 	float farPlane;
@@ -108,7 +143,8 @@ private:
 	//variables for mouse and keyboard input
 	glm::vec2 lastCursorPos = glm::vec2(0.0f);
 	glm::vec2 angle = glm::vec2(0.0f);
-	glm::vec3 direction = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 rotation = glm::vec3(0.0f);
+	
 	const glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	
 	void processInput(const WindowManager& windowManager) {
@@ -160,10 +196,18 @@ private:
 		position.y += (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) ? cameraSpeed : 0;
 	}
 
-	void updateMatrix(const WindowManager& windowManager) {
-		glm::mat4 view = glm::lookAt(position, position + direction, cameraUp);
-		glm::mat4 projection = glm::perspective(glm::radians(this->fov), windowManager.getAspectRatio(), this->nearPlane, this->farPlane);
-		this->cameraMatrix = projection * view;
+	void updateMatrix() {
+		direction = glm::normalize(direction);
+		if (this->projType == ProjectionType::ORTHOGRAPHIC) {
+			viewMatrix = glm::lookAt(position, position + direction, cameraUp);
+			projectionMatrix = glm::ortho(-this->fov, this->fov, -this->fov, this->fov, this->nearPlane, this->farPlane);
+			this->cameraMatrix = projectionMatrix * viewMatrix;
+		}
+		else {
+			viewMatrix = glm::lookAt(position, position + direction, cameraUp);
+			projectionMatrix = glm::perspective(glm::radians(this->fov), this->aspectRatio, this->nearPlane, this->farPlane);
+			this->cameraMatrix = projectionMatrix * viewMatrix;
+		}
 	}
 
 	glm::vec2 getCursorsPosition(const WindowManager& windowManager) {

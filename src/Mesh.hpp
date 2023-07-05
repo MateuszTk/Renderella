@@ -118,6 +118,8 @@ public:
 			submesh.material.use();
 			submesh.material.getShaderProgram()->setMat4("transformations", finalTransformationMatrix);
 			submesh.material.getShaderProgram()->setMat4("model", model);
+			submesh.material.getShaderProgram()->setMat4("view", Camera::getActiveCamera()->getViewMatrix());
+			submesh.material.getShaderProgram()->setMat4("projection", Camera::getActiveCamera()->getProjectionMatrix());
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
 			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);

@@ -89,6 +89,10 @@ public:
 		glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 	}
 
+	void setMat4s(const std::string& name, glm::mat4* values, int size) {
+		glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), size, GL_FALSE, glm::value_ptr(values[0]));
+	}
+
 	~ShaderProgram() {
 		if (master) {
 			glDeleteProgram(this->id);

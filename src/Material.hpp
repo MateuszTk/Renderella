@@ -67,6 +67,14 @@ public:
 		return includeCameraPosUniform;
 	}
 
+	void setIncludeCameraDirUniform(bool includeCameraDirUniform) {
+		this->includeCameraDirUniform = includeCameraDirUniform;
+	}
+
+	bool getIncludeCameraDirUniform() const {
+		return includeCameraDirUniform;
+	}
+
 	void use() {
 		shaderProgram->use();
 		for (unsigned int i = 0; i < textures.size(); i++) {
@@ -84,10 +92,14 @@ public:
 			shaderProgram->setVec4s("lightPos", Light::getLightPositions(), Light::getMaxLights());
 			shaderProgram->setVec3s("lightColor", Light::getLightColors(), Light::getMaxLights());
 			shaderProgram->setVec3s("lightDir", Light::getLightDirections(), Light::getMaxLights());
+			shaderProgram->setMat4s("lightSpaceMatrix", Light::getLightSpaceMatrices(), Light::getMaxLights());
 			shaderProgram->setInt("usedLights", Light::getUsedLightsCnt());
 		}
 		if (includeCameraPosUniform) {
 			shaderProgram->setVec3("viewPos", Camera::getActiveCamera()->getPosition());
+		}
+		if (includeCameraDirUniform) {
+			shaderProgram->setVec3("viewDir", Camera::getActiveCamera()->getDirection());
 		}
 	}
 
@@ -99,4 +111,5 @@ protected:
 	std::string name;
 	bool includeLightsUniforms = false;
 	bool includeCameraPosUniform = false;
+	bool includeCameraDirUniform = false;
 };
