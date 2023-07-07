@@ -41,8 +41,10 @@ public:
 	}
 
 	const ShaderProgram& use() {
-		glUseProgram(this->id);
-		currentProgram = this;
+		if (currentProgram != this) {
+			glUseProgram(this->id);
+			currentProgram = this;
+		}	
 		return *this;
 	}
 

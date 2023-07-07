@@ -127,6 +127,11 @@ public:
 	}
 
 	void use() {
+		if (shaderProgram == nullptr) { 
+			std::cout << "Material::use() called with shaderProgram = nullptr\n";
+			return;
+		}
+
 		shaderProgram->use();
 		for (unsigned int i = 0; i < textures.size(); i++) {
 			glActiveTexture(GL_TEXTURE0 + i);
