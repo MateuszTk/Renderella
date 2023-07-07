@@ -7,6 +7,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "UniLocation.hpp"
+
+class UniLocation;
 
 class ShaderProgram {
 public:
@@ -37,61 +40,30 @@ public:
 		return this->id;
 	}
 
-	void use() {
+	const ShaderProgram& use() {
 		glUseProgram(this->id);
 		currentProgram = this;
+		return *this;
 	}
 
 	static ShaderProgram* getCurrentProgram() {
 		if (currentProgram == nullptr) {
-			std::cout << "No shader program is currently in use\n";
+			std::cout << "Warning: No shader program is currently in use\n";
 		}
 		return currentProgram;
 	}
 
-	void setInt(const std::string& name, int value) {
-		glUniform1i(glGetUniformLocation(this->id, name.c_str()), value);
-	}
-
-	void setFloat(const std::string& name, float value) {
-		glUniform1f(glGetUniformLocation(this->id, name.c_str()), value);
-	}
-
-	void setVec2(const std::string& name, const glm::vec2& value) {
-		glUniform2f(glGetUniformLocation(this->id, name.c_str()), value.x, value.y);
-	}
-
-	void setVec3(const std::string& name, const glm::vec3& value) {
-		glUniform3f(glGetUniformLocation(this->id, name.c_str()), value.x, value.y, value.z);
-	}
-
-	void setVec3s(const std::string& name, std::vector<glm::vec3> values) {
-		glUniform3fv(glGetUniformLocation(this->id, name.c_str()), values.size(), glm::value_ptr(values[0]));
-	}
-
-	void setVec3s(const std::string& name, glm::vec3* values, int size) {
-		glUniform3fv(glGetUniformLocation(this->id, name.c_str()), size, glm::value_ptr(values[0]));
-	}
-
-	void setVec4(const std::string& name, const glm::vec4& value) {
-		glUniform4f(glGetUniformLocation(this->id, name.c_str()), value.x, value.y, value.z, value.w);
-	}
-
-	void setVec4s(const std::string& name, glm::vec4* values, int size) {
-		glUniform4fv(glGetUniformLocation(this->id, name.c_str()), size, glm::value_ptr(values[0]));
-	}
-
-	void setMat3(const std::string& name, const glm::mat3& value) {
-		glUniformMatrix3fv(glGetUniformLocation(this->id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
-	}
-
-	void setMat4(const std::string& name, const glm::mat4& value) {
-		glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
-	}
-
-	void setMat4s(const std::string& name, glm::mat4* values, int size) {
-		glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), size, GL_FALSE, glm::value_ptr(values[0]));
-	}
+	void setInt(const UniLocation& location, int value);
+	void setFloat(const UniLocation& location, float value);
+	void setVec2(const UniLocation& location, const glm::vec2& value);
+	void setVec3(const UniLocation& location, const glm::vec3& value);
+	void setVec3s(const UniLocation& location, std::vector<glm::vec3> values);
+	void setVec3s(const UniLocation& location, glm::vec3* values, int size);
+	void setVec4(const UniLocation& location, const glm::vec4& value);
+	void setVec4s(const UniLocation& location, glm::vec4* values, int size);
+	void setMat3(const UniLocation& location, const glm::mat3& value);
+	void setMat4(const UniLocation& location, const glm::mat4& value);
+	void setMat4s(const UniLocation& location, glm::mat4* values, int size);
 
 	~ShaderProgram() {
 		if (master) {

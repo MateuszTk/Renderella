@@ -32,6 +32,13 @@ public:
 			std::string currentMaterialName = "";
 			std::string line;
 			while (std::getline(file, line)) {
+				// Remove leading whitespace
+				int offset = 0;
+				while (offset < line.size() && line[offset] <= ' ') {
+					offset++;
+				}
+				line = line.substr(offset);
+
 				if (line[0] == 'n' && line[1] == 'e' && line[2] == 'w') {
 					// newmtl
 					std::istringstream iss(line.substr(7));
@@ -48,11 +55,17 @@ public:
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
 						std::string texturePath = directry + line.substr(7);
-						materials->at(currentMaterialName).addDiffuseMap(std::make_shared<Texture>(texturePath));
+						auto texture = std::make_shared<Texture>(texturePath);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).addDiffuseMap(texture);
+						}
 					}
-					else if (option == "map_Bu") {
+					else if (option == "map_Bu" || option == "map_bu") {
 						std::string texturePath = directry + line.substr(9);
-						materials->at(currentMaterialName).addNormalMap(std::make_shared<Texture>(texturePath));
+						auto texture = std::make_shared<Texture>(texturePath);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).addNormalMap(texture);
+						}
 					}
 				}
 			}
@@ -67,7 +80,7 @@ public:
 		std::vector<Vertex> vertices;
 		std::vector<glm::vec2> textureCoords;
 		std::vector<glm::vec3> normals;
-		SubMesh subMesh;
+		std::vector<SubMesh> subMeshes = { SubMesh() };
 		std::unique_ptr<std::map<std::string, PhongMat>> materials = nullptr;
 		unsigned int vertexOffset = 0;
 
@@ -80,17 +93,20 @@ public:
 			std::string line;
 			while (std::getline(file, line)) {
 				if (line[0] == 'o') {
-					if (subMesh.elements.size() > 0) {
+					if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
 						vertexOffset += vertices.size();
-						meshes.push_back(Mesh(vertices, { subMesh }));
+						meshes.push_back(Mesh(vertices, subMeshes));
 						vertices.clear();
-						subMesh.elements.clear();
+						subMeshes.clear();
+						subMeshes.push_back(SubMesh());
 					}
 					std::cout << '.';
 				}
 				else if (line[0] == 'g') {
 					//group
-					//TODO: implement with submeshes
+					if (subMeshes.back().elements.size() > 0) {
+						subMeshes.push_back(SubMesh());
+					}
 				}
 				else if (line[0] == 'v') {
 					if (line[1] == ' ') {
@@ -117,34 +133,45 @@ public:
 					//vertexstring is a string of the form "vertexIndex/textureIndex/normalIndex"
 					std::string vertexString;
 					while (iss >> vertexString) {
-						unsigned int vertexIndex = std::stoi(vertexString);
-						unsigned int textureIndex = 0;
-						unsigned int normalIndex = 0;
+						int vertexIndex = std::stoi(vertexString);
+						if (vertexIndex < 0) {
+							vertexIndex = vertices.size() + vertexIndex + 1;
+						}
+						int textureIndex = 0;
+						int normalIndex = 0;
 
 						int separatorIndex = vertexString.find('/');
 						if (separatorIndex != std::string::npos) {
 							vertexString = vertexString.substr(separatorIndex + 1);
-							textureIndex = std::stoi(vertexString);
+							if (vertexString[0] != '/') {
+								textureIndex = std::stoi(vertexString);
+								if (textureIndex < 0) {
+									textureIndex = textureCoords.size() + textureIndex + 1;
+								}
+							}
 
 							separatorIndex = vertexString.find('/');
 							if (separatorIndex != std::string::npos) {
 								normalIndex = std::stoi(vertexString.substr(separatorIndex + 1));
+								if (normalIndex < 0) {
+									normalIndex = normals.size() + normalIndex + 1;
+								}
 							}
 						}
 
-						unsigned int localVertexIndex = vertexIndex - 1 - vertexOffset;
+						int localVertexIndex = vertexIndex - 1 - vertexOffset;
 						if (textureIndex > 0) {
 							vertices[localVertexIndex].texture = textureCoords[textureIndex - 1];
 						}
 						if (normalIndex > 0) {
 							vertices[localVertexIndex].normal = normals[normalIndex - 1];
 						}
-						subMesh.elements.push_back(localVertexIndex);
+						subMeshes.back().elements.push_back(localVertexIndex);
 					}
 					// calculate tangent
-					Vertex& vert0 = vertices[subMesh.elements[subMesh.elements.size() - 3]];
-					Vertex& vert1 = vertices[subMesh.elements[subMesh.elements.size() - 2]];
-					Vertex& vert2 = vertices[subMesh.elements[subMesh.elements.size() - 1]];
+					Vertex& vert0 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 3]];
+					Vertex& vert1 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 2]];
+					Vertex& vert2 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 1]];
 
 					glm::vec3 v0 = vert0.position;
 					glm::vec3 v1 = vert1.position;
@@ -175,8 +202,13 @@ public:
 				else if (line[0] == 'u' && line[1] == 's') {
 					//usemtl
 					if (materials != nullptr) {
+						// create new group
+						if (subMeshes.back().elements.size() > 0) {
+							subMeshes.push_back(SubMesh());
+						}
+						// assign material
 						try {
-							subMesh.material = materials->at(line.substr(7));
+							subMeshes.back().material = materials->at(line.substr(7));
 						}
 						catch (std::out_of_range e) {
 							std::cout << "[obj] Material not matched: " << line.substr(7) << "\n";
@@ -199,12 +231,15 @@ public:
 			vertex.bitangent = glm::normalize(vertex.bitangent);
 		}
 
-		if (subMesh.elements.size() > 0) {
-			meshes.push_back(Mesh(vertices, { subMesh }));
+		if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
+			meshes.push_back(Mesh(vertices, subMeshes));
 		}
 
 		std::cout << "[obj] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";
-
+		for (int i = 0; i < meshes.size(); i++) {
+			std::cout << "   [" << i << "] (" << subMeshes.size() << "submesh" << ((subMeshes.size() > 1) ? "es" : "") << ")\n";
+		}	
+		std::cout << '\n';
 		return meshes;
 	}
 };

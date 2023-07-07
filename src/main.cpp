@@ -24,9 +24,9 @@ int main() {
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);
 	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 16.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.1f, -0.9f, 0.4f));
-	light1.setFov(16.0f);
+	light1.setFov(30.0f);
 
-	Framebuffer lightFramebuffer(1024, 1024, 0);
+	Framebuffer lightFramebuffer(2048, 2048, 0);
 
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 2);
 	Mesh plane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");

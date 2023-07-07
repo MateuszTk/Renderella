@@ -24,13 +24,22 @@ public:
 			else if (nrChannels == 4) {
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			}
+			else if (nrChannels == 2) {
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+			}
+			else if (nrChannels == 1) {
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+			}
 			else {
-				std::cout << "Error: unsupported number of channels\n";
+				std::cout << "Error: unsupported number of channels \"" << path << "\"\n";
 			}
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 		else {
 			std::cout << "Error: failed to load texture \"" << path << "\"\n";
+			width = 0;
+			height = 0;
+			nrChannels = 0;
 		}
 		stbi_image_free(data);
 		glBindTexture(GL_TEXTURE_2D, 0);

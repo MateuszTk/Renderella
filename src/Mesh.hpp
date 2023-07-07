@@ -43,7 +43,8 @@ public:
 			submeshes[i].EBO = (this->EBOs)[i];
 		}
 
-		updateElements();		
+		updateElements();
+		updateModel();
 	}
 
 	Mesh(Mesh&& other) {
@@ -57,6 +58,7 @@ public:
 		this->position = other.position;
 		this->rotation = other.rotation;
 		this->scale = other.scale;
+		updateModel();
 	}
 
 	std::vector<Vertex>& getVertices() {
@@ -104,22 +106,13 @@ public:
 	void draw() {
 		glBindVertexArray(VAO);
 
-		//apply transformations
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, this->position);
-		model = glm::rotate(model, glm::radians(this->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::rotate(model, glm::radians(this->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(this->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::scale(model, this->scale);
-
 		glm::mat4 finalTransformationMatrix = Camera::getActiveCamera()->getCameraMatrix() * model;
 
-		for (auto& submesh : this->submeshes) {
+		for (auto& submesh : this->submeshes) {			
+			submesh.material.setMat4("transformations", finalTransformationMatrix);
+			submesh.material.setMat4("model", model);
+			submesh.material.setMat4("projectionView", Camera::getActiveCamera()->getCameraMatrix());
 			submesh.material.use();
-			submesh.material.getShaderProgram()->setMat4("transformations", finalTransformationMatrix);
-			submesh.material.getShaderProgram()->setMat4("model", model);
-			submesh.material.getShaderProgram()->setMat4("view", Camera::getActiveCamera()->getViewMatrix());
-			submesh.material.getShaderProgram()->setMat4("projection", Camera::getActiveCamera()->getProjectionMatrix());
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
 			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
@@ -143,6 +136,7 @@ public:
 
 	void setPosition(const glm::vec3& position) {
 		this->position = position;
+		updateModel();
 	}
 
 	glm::vec3 getRotation() const {
@@ -151,6 +145,7 @@ public:
 
 	void setRotation(const glm::vec3& rotation) {
 		this->rotation = rotation;
+		updateModel();
 	}
 
 	glm::vec3 getScale() const {
@@ -159,6 +154,7 @@ public:
 
 	void setScale(const glm::vec3& scale) {
 		this->scale = scale;
+		updateModel();
 	}
 
 	~Mesh() {
@@ -174,4 +170,15 @@ private:
 	glm::vec3 rotation;
 	glm::vec3 scale;
 	bool moved;
+	glm::mat4 model;
+
+	void updateModel() {
+		//apply transformations
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, this->position);
+		model = glm::rotate(model, glm::radians(this->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(this->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(this->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::scale(model, this->scale);
+	}
 };

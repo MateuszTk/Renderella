@@ -11,9 +11,10 @@ public:
 	};
 
 	Camera(ProjectionType projType, float aspectRatio, bool controllable = false, const glm::vec3& position = glm::vec3(0.0f), const glm::vec3& direction = glm::vec3(0.0f, 0.0f, 1.0f), float fov = 65.0f, float farPlane = 400.0f, float nearPlane = 0.1f)
-		: projType(projType), cameraMatrix(1.0f), aspectRatio(aspectRatio), fov(fov), farPlane(farPlane), nearPlane(nearPlane), controllable(controllable) {
+		: projType(projType), cameraMatrix(1.0f), aspectRatio(aspectRatio), fov(fov), farPlane(farPlane), nearPlane(nearPlane), controllable(controllable), viewMatrix(1.0f), projectionMatrix(1.0f) {
 		this->position = position;
 		this->direction = direction;
+		updateMatrix();
 	}
 
 	const glm::vec3& getPosition() const {

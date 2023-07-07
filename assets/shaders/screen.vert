@@ -5,8 +5,7 @@ layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec3 aTangent;
 layout (location = 4) in vec3 aBitangent;
 
-uniform mat4 projection;
-uniform mat4 view;
+uniform mat4 projectionView;
 
 out vec2 TexCoords;
 out vec3 CameraRay;
@@ -22,6 +21,6 @@ void main()
 
     TexCoords = aTexCoord;
 
-    vec4 worldPos = inverse(projection * view) * vec4(aPos.xy, 1.0, 1.0);
+    vec4 worldPos = inverse(projectionView) * vec4(aPos.xy, 1.0, 1.0);
     CameraRay = worldPos.xyz / worldPos.w - viewPos;
 }
