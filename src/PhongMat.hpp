@@ -11,7 +11,7 @@ public:
 		setVec3("viewPos", glm::vec3(0.0f, 0.0f, 0.0f));
 
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
-		setSpecular(0.5f);
+		setSpecular(0.2f);
 		setShininess(32.0f);
 	}
 

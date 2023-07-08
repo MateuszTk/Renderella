@@ -2,6 +2,7 @@
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragLight;
+layout (location = 2) out vec4 FragNormal;
 
 in vec3 FragPos;
 in vec2 TexCoord;
@@ -63,5 +64,6 @@ void main() {
 	}
 
 	FragColor = vec4(objectColor.rgb, 1.0f);
-	FragLight = vec4(light, 1.0f);
+	FragLight = vec4(light, specular);
+	FragNormal = vec4(norm * 0.5 + 0.5, 1.0f);
 }

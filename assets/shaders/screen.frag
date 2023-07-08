@@ -1,18 +1,25 @@
 #version 330 core
+
+#define PI 3.1415926535897932384626433832795
+
 out vec4 FragColor;
   
 in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 CameraRay;
 
-// color
+// color: xyz
 uniform sampler2D screenTexture0;
-// light
+// light: xyz, specular: w
 uniform sampler2D screenTexture1;
+//normal: xyz
+uniform sampler2D screenTexture2;
 // depth
 uniform sampler2D depthTexture;
 // light depth
 uniform sampler2D lightDepth;
+
+uniform sampler2D sky;
 
 uniform vec4 lightPos[8];
 uniform vec3 lightColor[8];
@@ -39,9 +46,9 @@ float directionalShadow(vec4 lightSpacePos, int lightIndex) {
 	projCoords = projCoords * 0.5 + 0.5;
 	
 	float currentDepth = projCoords.z;
-	float bias = 0.004;
+	float bias = 0.005;
 
-	const int kernelSize = 1;
+	int kernelSize = 1;
 	vec2 texelSize = 1.0 / textureSize(lightDepth, 0);
 	float shadow = 0.0;
 	for (int y = -kernelSize; y <= kernelSize; y += 1) {
@@ -54,25 +61,44 @@ float directionalShadow(vec4 lightSpacePos, int lightIndex) {
 	return shadow;
 }
 
+vec3 getSkyColor(vec3 rayDir) {
+	vec3 rayNorm = normalize(rayDir);
+	vec2 skyUV = vec2(
+		atan(rayNorm.x, rayNorm.z) / (2.0 * PI),
+		acos(rayNorm.y) / -PI
+	);
+	return textureLod(sky, skyUV, 0.0).rgb;
+}
+
 void main() {
 	float depthValue = texture(depthTexture, TexCoords).r;
-	vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
+	if (depthValue < 1.0) {
+		vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
 
-	vec3 light = vec3(0.0);
+		vec3 light = vec3(0.0);
 
-	for (int i = 0; i < usedLights; i++){
-		int lightType = int(lightPos[i].w);
-		// Directional light
-		if (lightType == 1) {
-			vec4 lightSpacePos = lightSpaceMatrix[i] * vec4(worldPixelPos, 1.0);
-			light += lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i));
+		for (int i = 0; i < usedLights; i++){
+			int lightType = int(lightPos[i].w);
+			// Directional light
+			if (lightType == 1) {
+				vec4 lightSpacePos = lightSpaceMatrix[i] * vec4(worldPixelPos, 1.0);
+				light += lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i));
+			}
 		}
-	}
 	
-	// Ambient light
-	light += vec3(0.2);
+		// Ambient light
+		light += vec3(0.2);
 
-	vec3 lightData = texture(screenTexture1, TexCoords).rgb;
-	vec3 color = texture(screenTexture0, TexCoords).rgb;
-	FragColor = vec4(color * (light + lightData), 1.0);
+		
+		vec4 lightData = texture(screenTexture1, TexCoords);
+		vec3 normal = (texture(screenTexture2, TexCoords).rgb - 0.5) * 2.0;
+		vec3 reflectDir = reflect(normalize(CameraRay), normal);
+		vec3 skyReflection = getSkyColor(reflectDir);
+
+		vec3 color = texture(screenTexture0, TexCoords).rgb;
+		FragColor = vec4(color * (light + lightData.xyz + skyReflection * lightData.w), 1.0);
+	}
+	else{
+		FragColor = vec4(getSkyColor(CameraRay), 1.0);
+	}
 }

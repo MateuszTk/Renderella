@@ -23,17 +23,20 @@ int main() {
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f));
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);
-	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 16.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.1f, -0.9f, 0.4f));
-	light1.setFov(30.0f);
+	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.1f, -0.9f, 0.4f));
+	light1.setFov(50.0f);
 
-	Framebuffer lightFramebuffer(2048, 2048, 0);
+	Framebuffer lightFramebuffer(4096, 4096, 0);
 
-	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 2);
+	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Mesh plane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
 	plane.getSubmeshes()[0].material.addTexture("lightDepth", lightFramebuffer.getDepthTex());
 	plane.getSubmeshes()[0].material.setIncludeLightsUniforms(true);
 	plane.getSubmeshes()[0].material.setIncludeCameraPosUniform(true);
 	plane.getSubmeshes()[0].material.setIncludeCameraDirUniform(true);
+
+	auto sky = std::make_shared<Texture>("assets/san_giuseppe_bridge_4k.hdr");
+	plane.getSubmeshes()[0].material.addTexture("sky", sky);
 
 	while (window.frame(false, true)) {
 		camera.update(window);

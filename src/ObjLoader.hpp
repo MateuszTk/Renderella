@@ -51,6 +51,14 @@ public:
 					float shininess = std::stof(line.substr(3));
 					materials->at(currentMaterialName).setShininess(shininess);
 				}
+				else if (line[0] == 'K' && line[1] == 's'){
+					// specular
+					// TODO: parse specular color as color
+					std::istringstream iss(line.substr(3));
+					float x;
+					iss >> x;
+					materials->at(currentMaterialName).setSpecular(x);
+				}
 				else {
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
