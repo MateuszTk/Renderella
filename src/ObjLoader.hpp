@@ -82,6 +82,7 @@ public:
 		std::vector<glm::vec3> normals;
 		std::vector<SubMesh> subMeshes = { SubMesh() };
 		std::unique_ptr<std::map<std::string, PhongMat>> materials = nullptr;
+		SubMesh* currentSubMesh = &(subMeshes[0]);
 		unsigned int vertexOffset = 0;
 
 		std::ifstream file(path);
@@ -89,24 +90,29 @@ public:
 			std::cout << "[obj] Error opening obj file\n";
 		}
 		else {
+			std::stringstream fileBuffer;
+			fileBuffer << file.rdbuf();
+			file.close();
+
 			std::cout << "[obj] Loading obj file: " << path << "\n";
 			std::string line;
-			while (std::getline(file, line)) {
+			while (std::getline(fileBuffer, line)) {
 				if (line[0] == 'o') {
 					if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
-						vertexOffset += vertices.size();
 						meshes.push_back(Mesh(vertices, subMeshes));
-						vertices.clear();
-						subMeshes.clear();
-						subMeshes.push_back(SubMesh());
 					}
+					vertexOffset += vertices.size();
+					vertices.clear();
+					subMeshes.clear();
+					subMeshes.push_back(SubMesh());
+					currentSubMesh = &(subMeshes[0]);
 					std::cout << '.';
 				}
 				else if (line[0] == 'g') {
 					//group
-					if (subMeshes.back().elements.size() > 0) {
-						subMeshes.push_back(SubMesh());
-					}
+					//if (subMeshes.back().elements.size() > 0) {
+					//	subMeshes.push_back(SubMesh());
+					//}
 				}
 				else if (line[0] == 'v') {
 					if (line[1] == ' ') {
@@ -166,12 +172,12 @@ public:
 						if (normalIndex > 0) {
 							vertices[localVertexIndex].normal = normals[normalIndex - 1];
 						}
-						subMeshes.back().elements.push_back(localVertexIndex);
+						currentSubMesh->elements.push_back(localVertexIndex);
 					}
 					// calculate tangent
-					Vertex& vert0 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 3]];
-					Vertex& vert1 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 2]];
-					Vertex& vert2 = vertices[subMeshes.back().elements[subMeshes.back().elements.size() - 1]];
+					Vertex& vert0 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 3]];
+					Vertex& vert1 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 2]];
+					Vertex& vert2 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 1]];
 
 					glm::vec3 v0 = vert0.position;
 					glm::vec3 v1 = vert1.position;
@@ -202,16 +208,31 @@ public:
 				else if (line[0] == 'u' && line[1] == 's') {
 					//usemtl
 					if (materials != nullptr) {
-						// create new group
-						if (subMeshes.back().elements.size() > 0) {
-							subMeshes.push_back(SubMesh());
+						// find if submesh with this material already exists
+						bool found = false;
+						std::string matName = line.substr(7);
+						for (auto& subMesh : subMeshes) {
+							const std::string& curMatName = subMesh.material.getName();
+							if (curMatName.length() == 0 || curMatName == matName) {
+								found = true;
+								currentSubMesh = &subMesh;
+								break;
+							}
 						}
-						// assign material
-						try {
-							subMeshes.back().material = materials->at(line.substr(7));
-						}
-						catch (std::out_of_range e) {
-							std::cout << "[obj] Material not matched: " << line.substr(7) << "\n";
+
+						if (!found || currentSubMesh->material.getName().length() == 0) {
+							if (!found) {
+								// create new submesh
+								subMeshes.push_back(SubMesh());
+								currentSubMesh = &(subMeshes.back());
+							}
+							// assign material
+							try {
+								currentSubMesh->material = materials->at(line.substr(7));
+							}
+							catch (std::out_of_range e) {
+								std::cout << "[obj] Material not matched: " << line.substr(7) << "\n";
+							}
 						}
 					}
 				}
@@ -221,7 +242,6 @@ public:
 					materials = loadMtl(mtlPath);
 				}
 			}
-			file.close();
 			std::cout << '\n';
 		}
 
