@@ -56,9 +56,9 @@ public:
 
 		Material planeMat(screenShader);
 		for (int i = 0; i < colorTexs.size(); i++) {
-			planeMat.addTexture("screenTexture" + std::to_string(i), colorTexs[i]);
+			planeMat.setTexture("screenTexture" + std::to_string(i), colorTexs[i]);
 		}
-		planeMat.addTexture("depthTexture", depthTex);
+		planeMat.setTexture("depthTexture", depthTex);
 		SubMesh planeSub(primitives::plane::planeInd, planeMat);
 		return Mesh(primitives::plane::planeVert, { planeSub });
 	}

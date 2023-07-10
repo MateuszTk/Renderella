@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragLight;
@@ -63,7 +63,7 @@ void main() {
 		light += (diffusev + specularv) * attenuation;
 	}
 
-	FragColor = vec4(objectColor.rgb, 1.0f);
+	FragColor = vec4(objectColor.rgb, clamp(shininess / 1000.0, 0.0, 1.0));
 	FragLight = vec4(light, specular);
 	FragNormal = vec4(norm * 0.5 + 0.5, 1.0f);
 }

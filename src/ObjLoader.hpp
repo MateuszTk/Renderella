@@ -65,14 +65,14 @@ public:
 						std::string texturePath = directry + line.substr(7);
 						auto texture = std::make_shared<Texture>(texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).addDiffuseMap(texture);
+							materials->at(currentMaterialName).setDiffuseMap(texture);
 						}
 					}
 					else if (option == "map_Bu" || option == "map_bu") {
 						std::string texturePath = directry + line.substr(9);
 						auto texture = std::make_shared<Texture>(texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).addNormalMap(texture);
+							materials->at(currentMaterialName).setNormalMap(texture);
 						}
 					}
 				}

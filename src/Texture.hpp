@@ -76,6 +76,19 @@ public:
 		other.master = false;
 	}
 
+	static std::shared_ptr<Texture> createColorTexture(int width, int height, glm::vec4 color){
+		unsigned char* data = new unsigned char[width * height * 4];
+		for (int i = 0; i < width * height; i++) {
+			data[i * 4 + 0] = (unsigned char)(color.r * 255);
+			data[i * 4 + 1] = (unsigned char)(color.g * 255);
+			data[i * 4 + 2] = (unsigned char)(color.b * 255);
+			data[i * 4 + 3] = (unsigned char)(color.a * 255);
+		}
+		std::shared_ptr<Texture> texture = std::make_shared<Texture>(width, height, data);
+		delete[] data;
+		return texture;
+	}
+
 	unsigned int getTexture() const {
 		return this->texture;
 	}

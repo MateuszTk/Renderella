@@ -44,8 +44,12 @@ public:
 		this->viewPosLoc.update(shaderProgram);
 		this->viewDirLoc.update(shaderProgram);
 
-		for (auto& texture : textures) {
-			texture.first.update(shaderProgram);
+		{
+			auto newMap = std::unordered_map<UniLocation, std::shared_ptr<Texture>>();
+			for (auto& texture : textures) {
+				newMap[UniLocation(texture.first, shaderProgram)] = texture.second;
+			}
+			this->textures = std::move(newMap);
 		}
 
 		{
@@ -78,8 +82,8 @@ public:
 		return shaderProgram;
 	}
 
-	void addTexture(const std::string& name, const std::shared_ptr<Texture>& texture) {
-		textures.push_back(make_pair(UniLocation(name, shaderProgram, true), texture));
+	void setTexture(const std::string& name, const std::shared_ptr<Texture>& texture) {
+		textures[UniLocation(name, shaderProgram, true)] = texture;
 	}
 
 	void setVec3(const std::string& name, const glm::vec3& vec) {
@@ -133,10 +137,12 @@ public:
 		}
 
 		shaderProgram->use();
-		for (unsigned int i = 0; i < textures.size(); i++) {
+		unsigned int i = 0;
+		for (auto& tex : textures) {
 			glActiveTexture(GL_TEXTURE0 + i);
-			textures[i].second->bind();
-			shaderProgram->setInt(textures[i].first, i);
+			tex.second->bind();
+			shaderProgram->setInt(tex.first, i);
+			i++;
 		}
 		for (auto& vect : vec3s) {
 			shaderProgram->setVec3(vect.first, vect.second);
@@ -164,7 +170,7 @@ public:
 
 protected:
 	std::shared_ptr<ShaderProgram> shaderProgram;
-	std::vector<std::pair<UniLocation, std::shared_ptr<Texture>>> textures;
+	std::unordered_map<UniLocation, std::shared_ptr<Texture>> textures;
 	std::unordered_map<UniLocation, glm::vec3> vec3s;
 	std::unordered_map<UniLocation, float> floats;
 	std::unordered_map<UniLocation, glm::mat4> mat4s;

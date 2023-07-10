@@ -30,13 +30,13 @@ int main() {
 
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Mesh plane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
-	plane.getSubmeshes()[0].material.addTexture("lightDepth", lightFramebuffer.getDepthTex());
+	plane.getSubmeshes()[0].material.setTexture("lightDepth", lightFramebuffer.getDepthTex());
 	plane.getSubmeshes()[0].material.setIncludeLightsUniforms(true);
 	plane.getSubmeshes()[0].material.setIncludeCameraPosUniform(true);
 	plane.getSubmeshes()[0].material.setIncludeCameraDirUniform(true);
 
 	auto sky = std::make_shared<Texture>("assets/san_giuseppe_bridge_4k.hdr");
-	plane.getSubmeshes()[0].material.addTexture("sky", sky);
+	plane.getSubmeshes()[0].material.setTexture("sky", sky);
 
 	while (window.frame(false, true)) {
 		camera.update(window);

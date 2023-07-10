@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 #define PI 3.1415926535897932384626433832795
 
@@ -8,7 +8,7 @@ in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 CameraRay;
 
-// color: xyz
+// color: xyz, shininess: w
 uniform sampler2D screenTexture0;
 // light: xyz, specular: w
 uniform sampler2D screenTexture1;
@@ -61,13 +61,15 @@ float directionalShadow(vec4 lightSpacePos, int lightIndex) {
 	return shadow;
 }
 
-vec3 getSkyColor(vec3 rayDir) {
+vec3 getSkyColor(vec3 rayDir, float roughness) {
 	vec3 rayNorm = normalize(rayDir);
 	vec2 skyUV = vec2(
 		atan(rayNorm.x, rayNorm.z) / (2.0 * PI),
 		acos(rayNorm.y) / -PI
 	);
-	return textureLod(sky, skyUV, 0.0).rgb;
+	float maxLod = float(textureQueryLevels(sky) - 3);
+	roughness = clamp(roughness * maxLod, 0.0, maxLod);
+	return textureLod(sky, skyUV, roughness).rgb;
 }
 
 void main() {
@@ -89,16 +91,18 @@ void main() {
 		// Ambient light
 		light += vec3(0.2);
 
-		
+		vec4 color = texture(screenTexture0, TexCoords);
+
 		vec4 lightData = texture(screenTexture1, TexCoords);
 		vec3 normal = (texture(screenTexture2, TexCoords).rgb - 0.5) * 2.0;
 		vec3 reflectDir = reflect(normalize(CameraRay), normal);
-		vec3 skyReflection = getSkyColor(reflectDir);
-
-		vec3 color = texture(screenTexture0, TexCoords).rgb;
-		FragColor = vec4(color * (light + lightData.xyz + skyReflection * lightData.w), 1.0);
+		float roughness = 1.0 - color.a;
+		roughness *= roughness;
+		vec3 skyReflection = getSkyColor(reflectDir, roughness);
+	
+		FragColor = vec4(color.rgb * (light + lightData.xyz + skyReflection * lightData.w), 1.0);
 	}
 	else{
-		FragColor = vec4(getSkyColor(CameraRay), 1.0);
+		FragColor = vec4(getSkyColor(CameraRay, 0.0), 1.0);
 	}
 }

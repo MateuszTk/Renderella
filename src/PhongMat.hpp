@@ -11,8 +11,9 @@ public:
 		setVec3("viewPos", glm::vec3(0.0f, 0.0f, 0.0f));
 
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
-		setSpecular(0.2f);
+		setSpecular(0.5f);
 		setShininess(32.0f);
+		setNormalMap(Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)));
 	}
 
 	PhongMat(const PhongMat& other)
@@ -20,12 +21,12 @@ public:
 
 	}
 
-	void addDiffuseMap(const std::shared_ptr<Texture>& texture) {
-		addTexture("diffuseMap", texture);
+	void setDiffuseMap(const std::shared_ptr<Texture>& texture) {
+		setTexture("diffuseMap", texture);
 	}
 
-	void addNormalMap(const std::shared_ptr<Texture>& texture) {
-		addTexture("normalMap", texture);
+	void setNormalMap(const std::shared_ptr<Texture>& texture) {
+		setTexture("normalMap", texture);
 	}
 
 	void setSpecular(float specular) {
