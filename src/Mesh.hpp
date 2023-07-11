@@ -112,6 +112,8 @@ public:
 			submesh.material.setMat4("transformations", finalTransformationMatrix);
 			submesh.material.setMat4("model", model);
 			submesh.material.setMat4("projectionView", Camera::getActiveCamera()->getCameraMatrix());
+			submesh.material.setMat4("view", Camera::getActiveCamera()->getViewMatrix());
+			submesh.material.setMat4("projection", Camera::getActiveCamera()->getProjectionMatrix());
 			submesh.material.use();
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
