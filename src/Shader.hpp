@@ -13,7 +13,7 @@ public:
 		if (isFilePath) {
 			std::ifstream file(source);
 			if (!file.is_open()) {
-				std::cout << "Error opening shader file\n";
+				std::cout << "Error opening shader file: " << source << '\n';
 				this->ok = false;
 				return;
 			}
@@ -32,7 +32,7 @@ public:
 
 		if (!success) {
 			glGetShaderInfoLog(id, 512, NULL, infoLog);
-			std::cout << "Error compiling shader\n" << infoLog << '\n';
+			std::cout << "Error compiling shader \"" << source << "\"\n" << infoLog << '\n';
 			this->ok = false;
 		}
 	}

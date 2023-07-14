@@ -6,8 +6,8 @@ public:
 	PhongMat(const std::string& name = "")
 		: Material(getShaderProgram(), name) {
 
-		this->includeLightsUniforms = true;
-		this->includeCameraPosUniform = true;
+		this->setIncludeLightsUniforms(true);
+		this->setIncludeCameraPosDirUniform(true);
 		setVec3("viewPos", glm::vec3(0.0f, 0.0f, 0.0f));
 
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));

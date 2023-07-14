@@ -48,6 +48,17 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
+	// Produces a mesh with a plane that covers the entire screen with no framebuffer specific textures.
+	static Mesh produceEmptyFbPlane(const char* vert, const char* frag) {
+		Shader<GL_VERTEX_SHADER> screenVert(vert, true);
+		Shader<GL_FRAGMENT_SHADER> screenFrag(frag, true);
+		auto screenShader = std::make_shared<ShaderProgram>(screenVert, screenFrag);
+
+		Material planeMat(screenShader);
+		SubMesh planeSub(primitives::plane::planeInd, planeMat);
+		return Mesh(primitives::plane::planeVert, { planeSub });
+	}
+
 	// Produces a mesh with a plane that covers the entire screen with the framebuffer's color and depth textures.
 	Mesh produceFbPlane(const char* vert, const char* frag) {
 		Shader<GL_VERTEX_SHADER> screenVert(vert, true);

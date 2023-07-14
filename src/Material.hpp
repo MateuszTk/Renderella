@@ -21,7 +21,7 @@ public:
 	}
 
 	Material(const Material& other) 
-		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), includeCameraPosUniform(other.includeCameraPosUniform),
+		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), includeCameraPosDirUniform(other.includeCameraPosDirUniform),
 		lightPosLoc(other.lightPosLoc), lightColorLoc(other.lightColorLoc), 
 		lightDirLoc(other.lightDirLoc), lightSpaceMatrixLoc(other.lightSpaceMatrixLoc),
 		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc) {
@@ -114,20 +114,12 @@ public:
 		return includeLightsUniforms;
 	}
 
-	void setIncludeCameraPosUniform(bool includeCameraPosUniform) {
-		this->includeCameraPosUniform = includeCameraPosUniform;
+	void setIncludeCameraPosDirUniform(bool includeCameraPosDirUniform) {
+		this->includeCameraPosDirUniform = includeCameraPosDirUniform;
 	}
 
 	bool getIncludeCameraPosUniform() const {
-		return includeCameraPosUniform;
-	}
-
-	void setIncludeCameraDirUniform(bool includeCameraDirUniform) {
-		this->includeCameraDirUniform = includeCameraDirUniform;
-	}
-
-	bool getIncludeCameraDirUniform() const {
-		return includeCameraDirUniform;
+		return includeCameraPosDirUniform;
 	}
 
 	void use() {
@@ -160,10 +152,8 @@ public:
 			shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLights());
 			shaderProgram->setInt(usedLightsLoc, Light::getUsedLightsCnt());
 		}
-		if (includeCameraPosUniform) {
+		if (includeCameraPosDirUniform) {
 			shaderProgram->setVec3(viewPosLoc, Camera::getActiveCamera()->getPosition());
-		}
-		if (includeCameraDirUniform) {
 			shaderProgram->setVec3(viewDirLoc, Camera::getActiveCamera()->getDirection());
 		}
 	}
@@ -176,8 +166,7 @@ protected:
 	std::unordered_map<UniLocation, glm::mat4> mat4s;
 	std::string name;
 	bool includeLightsUniforms = false;
-	bool includeCameraPosUniform = false;
-	bool includeCameraDirUniform = false;
+	bool includeCameraPosDirUniform = false;
 
 	UniLocation lightPosLoc = UniLocation("lightPos", shaderProgram);
 	UniLocation lightColorLoc = UniLocation("lightColor", shaderProgram);
