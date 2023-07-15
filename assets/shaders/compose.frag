@@ -15,7 +15,7 @@ uniform sampler2D depthTexture;
 void main() {
 	// Deferred
 	vec4 fragLight = texture(deferredLight, TexCoords);
-	fragLight.rgb *= fragLight.a * 4.0;
+	fragLight.rgb *= fragLight.a * 4.0 + 1.0;
 	vec4 fragReflection = texture(deferredReflection, TexCoords);
 	float specular = fragReflection.w;
 
@@ -25,7 +25,7 @@ void main() {
 		vec4 ssr = texture(ssrTexture, TexCoords);
 		vec2 unpackedSSR = vec2(ssr.x + ssr.y / 255.0, ssr.z + ssr.w / 255.0);
 		vec4 ssrLight = texture(deferredLight, unpackedSSR);
-		ssrLight.rgb *= ssrLight.a * 4.0;
+		ssrLight.rgb *= ssrLight.a * 4.0 + 1.0;
 		vec4 ssrReflection = texture(deferredReflection, unpackedSSR);
 		float ssrSpecular = ssrReflection.w;
 		vec3 ssrColor = texture(colorTexture, unpackedSSR).xyz * (ssrLight.xyz + ssrReflection.xyz * ssrSpecular);

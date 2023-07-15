@@ -11,7 +11,7 @@ in vec3 CameraRay;
 
 // color: xyz, shininess: w
 uniform sampler2D screenTexture0;
-// light: xyz, specular: w
+// specular: w
 uniform sampler2D screenTexture1;
 //normal: xyz
 uniform sampler2D screenTexture2;
@@ -79,37 +79,59 @@ vec3 getSkyColor(vec3 rayDir, float roughness) {
 void main() {
 	float depthValue = texture(depthTexture, TexCoords).r;
 	if (depthValue < 1.0) {
+		vec4 color = texture(screenTexture0, TexCoords);
+		float shininess = color.w * 1000.0;
+		vec4 lightData = texture(screenTexture1, TexCoords);
+		float specular = lightData.w;
+		vec3 normal = normalize((texture(screenTexture2, TexCoords).rgb - 0.5) * 2.0);
 		vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
+		vec3 cameraRayNorm = normalize(CameraRay);
 
-		vec3 light = vec3(0.0);
+		// Ambient light
+		vec3 light = vec3(0.2);
+		vec3 specularReflection = vec3(0.0);
 
 		for (int i = 0; i < usedLights; i++){
 			int lightType = int(lightPos[i].w);
-			// Directional light
+
+			//Diffuse
+			vec3 lightDirection = normalize((lightType == 0) ? (lightPos[i].xyz - worldPixelPos) : (-lightDir[i]));
+			float diffIntensity = max(dot(lightDirection, normal), 0.0);
+			vec3 diffuseF = diffIntensity * lightColor[i];
+
+			// Specular
+			vec3 lightReflectDir = reflect(-lightDirection, normal);
+			float spec = pow(max(dot(-cameraRayNorm, lightReflectDir), 0.0), shininess);
+			vec3 specularF = specular * spec * lightColor[i];
+
+			float attenuation = 1.0;		
 			if (lightType == 1) {
+				// Directional light
+				diffuseF *= 0.28;
 				vec4 lightSpacePos = lightSpaceMatrix[i] * vec4(worldPixelPos, 1.0);
-				light += lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i));
+				diffuseF += lightColor[i] * (1.0 - directionalShadow(lightSpacePos, i));
 			}
+			else if (lightType == 0) {
+				// Point light
+				float distance = length(lightPos[i].xyz - worldPixelPos);
+				attenuation = 1.0 / (1.0 + 0.14 * distance + 0.07 * distance * distance);
+			}
+
+			light += attenuation * diffuseF;
+			specularReflection += attenuation * specularF;
 		}
-	
-		// Ambient light
-		light += vec3(0.2);
-
-		vec4 color = texture(screenTexture0, TexCoords);
-
-		vec4 lightData = texture(screenTexture1, TexCoords);
-		vec3 normal = (texture(screenTexture2, TexCoords).rgb - 0.5) * 2.0;
-		vec3 reflectDir = reflect(normalize(CameraRay), normal);
-		float roughness = 1.0 - color.a;
+		
+		float roughness = 1.0 - specular;
 		roughness *= roughness;
+		vec3 reflectDir = reflect(normalize(CameraRay), normal);
 		vec3 skyReflection = getSkyColor(reflectDir, roughness);
 
-		LightColor = vec4(lightData.xyz + light, 1.0);
-		float brightness = length(LightColor.xyz);
-		LightColor.xyz = LightColor.xyz / brightness;
+		LightColor = vec4(light, 1.0);
+		float brightness = max(0, max(LightColor.x, max(LightColor.y, LightColor.z)) - 1.0);
+		LightColor.xyz = LightColor.xyz / (brightness + 1);
 		LightColor.w = brightness / 4.0;
 
-		ReflectionColor = vec4(skyReflection, lightData.w);
+		ReflectionColor = vec4(skyReflection + specularReflection, lightData.w);
 	}
 	else{
 		LightColor = vec4(0.0);

@@ -75,22 +75,16 @@ int main() {
 
 		// deferred shading
 		defferedFramebuffer.bind();
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 		deferredPlane.draw();
 
 		// screen space
 		screenSpaceFramebuffer.bind();
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 		screenSpacePlane.draw();
 
 		// compose
 		screenSpaceFramebuffer.unbind();
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 		composePlane.draw();
 	}
