@@ -83,19 +83,31 @@ public:
 	}
 
 	void setTexture(const std::string& name, const std::shared_ptr<Texture>& texture) {
-		textures[UniLocation(name, shaderProgram, true)] = texture;
+		if (overrideMaterial == nullptr || overrideMaterial.get() == this)
+			textures[UniLocation(name, shaderProgram)] = texture;
+		else
+			overrideMaterial->setTexture(name, texture);
 	}
 
 	void setVec3(const std::string& name, const glm::vec3& vec) {
-		vec3s[UniLocation(name, shaderProgram, true)] = vec;
+		if (overrideMaterial == nullptr || overrideMaterial.get() == this)
+			vec3s[UniLocation(name, shaderProgram, true)] = vec;
+		else
+			overrideMaterial->setVec3(name, vec);
 	}
 
 	void setFloat(const std::string& name, float flt) {
-		floats[UniLocation(name, shaderProgram, true)] = flt;
+		if (overrideMaterial == nullptr || overrideMaterial.get() == this)
+			floats[UniLocation(name, shaderProgram, true)] = flt;
+		else
+			overrideMaterial->setFloat(name, flt);
 	}
 
 	void setMat4(const std::string& name, const glm::mat4& mat) {
-		mat4s[UniLocation(name, shaderProgram, true)] = mat;
+		if (overrideMaterial == nullptr || overrideMaterial.get() == this)
+			mat4s[UniLocation(name, shaderProgram, true)] = mat;
+		else
+			overrideMaterial->setMat4(name, mat);
 	}
 
 	void setName(std::string name) {
@@ -123,6 +135,11 @@ public:
 	}
 
 	void use() {
+		if (overrideMaterial != nullptr && overrideMaterial.get() != this) {
+			overrideMaterial->use();
+			return;
+		}
+
 		if (shaderProgram == nullptr) { 
 			std::cout << "Material::use() called with shaderProgram = nullptr\n";
 			return;
@@ -158,6 +175,10 @@ public:
 		}
 	}
 
+	static void setOverrideMaterial(const std::shared_ptr<Material>& material) {
+		overrideMaterial = material;
+	}
+
 protected:
 	std::shared_ptr<ShaderProgram> shaderProgram;
 	std::unordered_map<UniLocation, std::shared_ptr<Texture>> textures;
@@ -168,6 +189,7 @@ protected:
 	bool includeLightsUniforms = false;
 	bool includeCameraPosDirUniform = false;
 
+private:
 	UniLocation lightPosLoc = UniLocation("lightPos", shaderProgram);
 	UniLocation lightColorLoc = UniLocation("lightColor", shaderProgram);
 	UniLocation lightDirLoc = UniLocation("lightDir", shaderProgram);
@@ -175,4 +197,6 @@ protected:
 	UniLocation usedLightsLoc = UniLocation("usedLights", shaderProgram);
 	UniLocation viewPosLoc = UniLocation("viewPos", shaderProgram);
 	UniLocation viewDirLoc = UniLocation("viewDir", shaderProgram);
+
+	static std::shared_ptr<Material> overrideMaterial;
 };

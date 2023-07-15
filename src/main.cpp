@@ -48,6 +48,11 @@ int main() {
 	composePlane.getSubmeshes()[0].material.setTexture("colorTexture", mainFramebuffer.getColorTexs()[0]);
 	composePlane.getSubmeshes()[0].material.setTexture("depthTexture", mainFramebuffer.getDepthTex());
 
+	Shader<GL_VERTEX_SHADER> shadowVertexShader("assets/shaders/shadow.vert", true);
+	Shader<GL_FRAGMENT_SHADER> shadowFragmentShader("assets/shaders/shadow.frag", true);
+	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader);
+	auto shadowMat = std::make_shared<Material>(shadowProgram);
+
 	while (window.frame(false, true)) {
 		camera.update(window);
 
@@ -59,9 +64,11 @@ int main() {
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		light1.use();
+		Material::setOverrideMaterial(shadowMat);
 		for (auto& mesh : sponza) {
 			mesh.draw();
 		}
+		Material::setOverrideMaterial(nullptr);
 		
 		// player camera
 		mainFramebuffer.bind(true);
