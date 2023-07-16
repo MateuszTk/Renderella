@@ -16,7 +16,7 @@
 #include "stb_image.h"
 
 int main() {
-	WindowManager window(2560, 1440, "Window");
+	WindowManager window(1280, 720, "Window");
 
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
 
