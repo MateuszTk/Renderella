@@ -16,11 +16,11 @@
 #include "stb_image.h"
 
 int main() {
-	WindowManager window(1280, 720, "Window");
+	WindowManager window(2560, 1440, "Window");
 
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
 
-	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 65.0f, 100.0f);
+	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f);
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);
 	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.1f, -0.9f, 0.4f));
@@ -29,17 +29,17 @@ int main() {
 	Framebuffer lightFramebuffer(4096, 4096, 0);
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Framebuffer defferedFramebuffer(window.getWidth(), window.getHeight(), 2);
-	Framebuffer screenSpaceFramebuffer(window.getWidth(), window.getHeight(), 1);
+	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1, true);
 
 	Mesh deferredPlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/deferred.frag");
 	deferredPlane.getSubmeshes()[0].material.setTexture("lightDepth", lightFramebuffer.getDepthTex());
 	deferredPlane.getSubmeshes()[0].material.setIncludeLightsUniforms(true);
-	deferredPlane.getSubmeshes()[0].material.setIncludeCameraPosDirUniform(true);
+	deferredPlane.getSubmeshes()[0].material.setIncludeCameraUniform(true);
 	auto sky = std::make_shared<Texture>("assets/san_giuseppe_bridge_4k.hdr");
 	deferredPlane.getSubmeshes()[0].material.setTexture("sky", sky);
 
 	Mesh screenSpacePlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
-	screenSpacePlane.getSubmeshes()[0].material.setIncludeCameraPosDirUniform(true);
+	screenSpacePlane.getSubmeshes()[0].material.setIncludeCameraUniform(true);
 
 	Mesh composePlane = Framebuffer::produceEmptyFbPlane("assets/shaders/screen.vert", "assets/shaders/compose.frag");
 	composePlane.getSubmeshes()[0].material.setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
@@ -86,13 +86,14 @@ int main() {
 		deferredPlane.draw();
 
 		// screen space
-		screenSpaceFramebuffer.bind();
+		screenSpaceFramebuffer.bind(true);
 		glDisable(GL_DEPTH_TEST);
 		screenSpacePlane.draw();
 
 		// compose
 		screenSpaceFramebuffer.unbind();
 		glDisable(GL_DEPTH_TEST);
+		glViewport(0, 0, window.getWidth(), window.getHeight());
 		composePlane.draw();
 	}
 

@@ -10,14 +10,15 @@
 
 class Framebuffer {
 public:
-	Framebuffer(unsigned int width, unsigned int height, int colorAttachments) : width(width), height(height) {
+	Framebuffer(unsigned int width, unsigned int height, int colorAttachments, bool floatColor = false) : width(width), height(height) {
 		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 		if (colorAttachments > 0) {
 			colorTexs.reserve(colorAttachments);
 			for (int i = 0; i < colorAttachments; i++) {
-				auto colorTex = std::make_shared<Texture>(width, height);
+				GLint format = floatColor ? GL_RGBA16F : GL_RGBA;
+				auto colorTex = std::make_shared<Texture>(width, height, format);
 				colorTex->bind();
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorTex->getTexture(), 0);
 				colorTex->unbind();

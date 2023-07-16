@@ -18,13 +18,14 @@ public:
 		usedLightsLoc = UniLocation("usedLights", shaderProgram);
 		viewPosLoc = UniLocation("viewPos", shaderProgram);
 		viewDirLoc = UniLocation("viewDir", shaderProgram);
+		nearFarLoc = UniLocation("nearFar", shaderProgram);
 	}
 
 	Material(const Material& other) 
-		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), includeCameraPosDirUniform(other.includeCameraPosDirUniform),
+		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), includeCameraUniform(other.includeCameraUniform),
 		lightPosLoc(other.lightPosLoc), lightColorLoc(other.lightColorLoc), 
 		lightDirLoc(other.lightDirLoc), lightSpaceMatrixLoc(other.lightSpaceMatrixLoc),
-		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc) {
+		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc) {
 
 	}
 
@@ -43,6 +44,7 @@ public:
 		this->usedLightsLoc.update(shaderProgram);
 		this->viewPosLoc.update(shaderProgram);
 		this->viewDirLoc.update(shaderProgram);
+		this->nearFarLoc.update(shaderProgram);
 
 		{
 			auto newMap = std::unordered_map<UniLocation, std::shared_ptr<Texture>>();
@@ -126,12 +128,12 @@ public:
 		return includeLightsUniforms;
 	}
 
-	void setIncludeCameraPosDirUniform(bool includeCameraPosDirUniform) {
-		this->includeCameraPosDirUniform = includeCameraPosDirUniform;
+	void setIncludeCameraUniform(bool includeCameraUniform) {
+		this->includeCameraUniform = includeCameraUniform;
 	}
 
-	bool getIncludeCameraPosUniform() const {
-		return includeCameraPosDirUniform;
+	bool getIncludeCameraUniform() const {
+		return includeCameraUniform;
 	}
 
 	void use() {
@@ -169,9 +171,11 @@ public:
 			shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLights());
 			shaderProgram->setInt(usedLightsLoc, Light::getUsedLightsCnt());
 		}
-		if (includeCameraPosDirUniform) {
-			shaderProgram->setVec3(viewPosLoc, Camera::getActiveCamera()->getPosition());
-			shaderProgram->setVec3(viewDirLoc, Camera::getActiveCamera()->getDirection());
+		if (includeCameraUniform) {
+			Camera* activeCamera = Camera::getActiveCamera();
+			shaderProgram->setVec3(viewPosLoc, activeCamera->getPosition());
+			shaderProgram->setVec3(viewDirLoc, activeCamera->getDirection());
+			shaderProgram->setVec2(nearFarLoc, glm::vec2(activeCamera->getNearPlane(), activeCamera->getFarPlane()));
 		}
 	}
 
@@ -187,7 +191,7 @@ protected:
 	std::unordered_map<UniLocation, glm::mat4> mat4s;
 	std::string name;
 	bool includeLightsUniforms = false;
-	bool includeCameraPosDirUniform = false;
+	bool includeCameraUniform = false;
 
 private:
 	UniLocation lightPosLoc = UniLocation("lightPos", shaderProgram);
@@ -197,6 +201,7 @@ private:
 	UniLocation usedLightsLoc = UniLocation("usedLights", shaderProgram);
 	UniLocation viewPosLoc = UniLocation("viewPos", shaderProgram);
 	UniLocation viewDirLoc = UniLocation("viewDir", shaderProgram);
+	UniLocation nearFarLoc = UniLocation("nearFar", shaderProgram);
 
 	static std::shared_ptr<Material> overrideMaterial;
 };

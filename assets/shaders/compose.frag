@@ -22,17 +22,16 @@ void main() {
 	float depthValue = texture(depthTexture, TexCoords).r;
 	if (depthValue < 1.0) {
 		// SSR
-		vec4 ssr = texture(ssrTexture, TexCoords);
-		vec2 unpackedSSR = vec2(ssr.x + ssr.y / 255.0, ssr.z + ssr.w / 255.0);
-		vec4 ssrLight = texture(deferredLight, unpackedSSR);
+		vec3 ssr = texture(ssrTexture, TexCoords).xyz;
+		vec4 ssrLight = texture(deferredLight, ssr.xy);
 		ssrLight.rgb *= ssrLight.a * 4.0 + 1.0;
-		vec4 ssrReflection = texture(deferredReflection, unpackedSSR);
+		vec4 ssrReflection = texture(deferredReflection, ssr.xy);
 		float ssrSpecular = ssrReflection.w;
-		vec3 ssrColor = texture(colorTexture, unpackedSSR).xyz * (ssrLight.xyz + ssrReflection.xyz * ssrSpecular);
+		vec3 ssrColor = texture(colorTexture, ssr.xy).xyz * (ssrLight.xyz + ssrReflection.xyz * ssrSpecular);
 
 		// Mix
 		vec3 color = texture(colorTexture, TexCoords).xyz;
-		vec3 mixedReflection = mix(fragReflection.xyz, ssrColor, ssr.x > 0.0) * specular;
+		vec3 mixedReflection = mix(fragReflection.xyz, ssrColor, ssr.z) * specular;
 		
 		FragColor = vec4(color * (fragLight.xyz + mixedReflection), 1.0);
 	}

@@ -30,8 +30,9 @@ uniform int usedLights;
 uniform vec3 viewPos;
 uniform vec3 viewDir;
 
-#define FAR 100.0
-#define NEAR 0.4
+uniform vec2 nearFar;
+#define NEAR nearFar.x
+#define FAR nearFar.y
 
 float linearizeDepth(float d, float zNear, float zFar) {
     float ndc = 2.0 * d - 1.0;
@@ -121,7 +122,7 @@ void main() {
 			specularReflection += attenuation * specularF;
 		}
 		
-		float roughness = 1.0 - specular;
+		float roughness = 1.0 - color.w;
 		roughness *= roughness;
 		vec3 reflectDir = reflect(normalize(CameraRay), normal);
 		vec3 skyReflection = getSkyColor(reflectDir, roughness);
@@ -131,7 +132,7 @@ void main() {
 		LightColor.xyz = LightColor.xyz / (brightness + 1);
 		LightColor.w = brightness / 4.0;
 
-		ReflectionColor = vec4(skyReflection + specularReflection, lightData.w);
+		ReflectionColor = vec4(skyReflection + specularReflection, specular);
 	}
 	else{
 		LightColor = vec4(0.0);
