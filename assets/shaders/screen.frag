@@ -134,7 +134,6 @@ vec4 ssr(vec3 worldPixelPos){
 	float visibility = 1.0;
 	if (traced.z >= 1.0) {
 		visibility = 0.0;
-		traced.xy = vec2(0.0);
 	}
 
 	//(1.0 - max(dot(-normalize(VSPostion), reflectionDir), 0.0));// * (1.0 - traced.z);

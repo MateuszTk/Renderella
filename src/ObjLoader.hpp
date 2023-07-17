@@ -31,6 +31,8 @@ public:
 		else {
 			std::string currentMaterialName = "";
 			std::string line;
+			std::unique_ptr<TextureData> diffuseMap = nullptr;
+
 			while (std::getline(file, line)) {
 				// Remove leading whitespace
 				int offset = 0;
@@ -41,6 +43,15 @@ public:
 
 				if (line[0] == 'n' && line[1] == 'e' && line[2] == 'w') {
 					// newmtl
+					
+					// add previous albedo map
+					if (diffuseMap != nullptr) {
+						auto texture = std::make_shared<Texture>(*diffuseMap);
+						materials->at(currentMaterialName).setDiffuseMap(texture);
+						diffuseMap = nullptr;
+					}
+
+					// read material name
 					std::istringstream iss(line.substr(7));
 					iss >> currentMaterialName;
 					//std::cout << "Found material: " << currentMaterialName << "\n";
@@ -63,19 +74,32 @@ public:
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
 						std::string texturePath = directry + line.substr(7);
-						auto texture = std::make_shared<Texture>(texturePath);
-						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setDiffuseMap(texture);
-						}
+						diffuseMap = std::make_unique<TextureData>(texturePath);
 					}
 					else if (option == "map_Bu" || option == "map_bu") {
-						std::string texturePath = directry + line.substr(9);
+						std::string name = line.substr(9);
+						if (name[0] == '-') {
+							name = name.substr(13);
+						}
+						std::string texturePath = directry + name;
+
 						auto texture = std::make_shared<Texture>(texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setNormalMap(texture);
 						}
 					}
+					else if (option == "map_d ") {
+						std::string texturePath = directry + line.substr(6);
+						TextureData textureData(texturePath);
+						if (textureData.getChannels() != 0 && diffuseMap != nullptr) {
+							diffuseMap->addAlpha(textureData);
+						}
+					}
 				}
+			}
+			if (diffuseMap != nullptr) {
+				auto texture = std::make_shared<Texture>(*diffuseMap);
+				materials->at(currentMaterialName).setDiffuseMap(texture);
 			}
 		}
 
@@ -265,7 +289,8 @@ public:
 
 		std::cout << "[obj] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";
 		for (int i = 0; i < meshes.size(); i++) {
-			std::cout << "   [" << i << "] (" << subMeshes.size() << "submesh" << ((subMeshes.size() > 1) ? "es" : "") << ")\n";
+			int submeshCount = meshes[i].getSubmeshes().size();
+			std::cout << "   [" << i << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es" : "") << ")\n";
 		}	
 		std::cout << '\n';
 		return meshes;

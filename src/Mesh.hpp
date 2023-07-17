@@ -159,6 +159,11 @@ public:
 		updateModel();
 	}
 
+	void setScale(float scale) {
+		this->scale = glm::vec3(scale);
+		updateModel();
+	}
+
 	~Mesh() {
 		clear();
 	}

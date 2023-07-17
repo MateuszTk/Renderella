@@ -3,10 +3,12 @@
 #include <iostream>
 #include "stb_image.h"
 #include <string>
+#include <memory>
+#include "TextureData.hpp"
 
 class Texture {
 public:
-	Texture(const std::string& path) {
+	Texture(const TextureData& textureData) {
 		this->master = true;
 		glGenTextures(1, &this->texture);
 		glBindTexture(GL_TEXTURE_2D, this->texture);
@@ -15,37 +17,40 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		stbi_set_flip_vertically_on_load(true);
-		unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-		if (data) {
+		width = textureData.getWidth();
+		height = textureData.getHeight();
+		nrChannels = textureData.getChannels();
+
+		if (textureData.getData() != nullptr) {
 			if (nrChannels == 3) {
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData.getData());
 			}
 			else if (nrChannels == 4) {
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData.getData());
 			}
 			else if (nrChannels == 2) {
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, textureData.getData());
 			}
 			else if (nrChannels == 1) {
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, textureData.getData());
 				GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
 				glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 			}
 			else {
-				std::cout << "Error: unsupported number of channels \"" << path << "\"\n";
+				std::cout << "Error: unsupported number of channels \"" << textureData.getName() << "\"\n";
 			}
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
-		else {
-			std::cout << "Error: failed to load texture \"" << path << "\"\n";
-			width = 0;
-			height = 0;
-			nrChannels = 0;
-		}
-		stbi_image_free(data);
+
+		
+
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
+
+	Texture(const std::string& path) : Texture(TextureData(path)) {
+
+	}
+
 
 	Texture(int width, int height, GLint internalFormat = GL_RGBA, const GLvoid* data = NULL) : width(width), height(height), nrChannels(4) {
 		this->master = true;
