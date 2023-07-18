@@ -19,11 +19,11 @@ int main() {
 	WindowManager window(1280, 720, "Window");
 
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
-
-	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f);
+	
+	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);
-	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.9f), glm::vec3(0.1f, -0.9f, 0.4f));
+	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f), glm::vec3(0.1f, -0.9f, 0.4f));
 	light1.setFov(50.0f);
 
 	Framebuffer lightFramebuffer(4096, 4096, 0);

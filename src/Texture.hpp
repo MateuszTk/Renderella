@@ -17,9 +17,9 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		width = textureData.getWidth();
-		height = textureData.getHeight();
-		nrChannels = textureData.getChannels();
+		this->width = textureData.getWidth();
+		this->height = textureData.getHeight();
+		this->nrChannels = textureData.getChannels();
 
 		if (textureData.getData() != nullptr) {
 			if (nrChannels == 3) {
@@ -127,5 +127,7 @@ public:
 private:
 	unsigned int texture;
 	bool master;
-	int width, height, nrChannels;
+	int width;
+	int height;
+	int nrChannels;
 };

@@ -60,6 +60,31 @@ public:
 		}
 	}
 
+	// if the color is all 0, make it single channel
+	void optimizeAlphaOnly() {
+		if (this->channels == 4) {
+			// check if color is all 0
+			bool allZero = true;
+			for (int i = 0; i < this->width * this->height; i += 4) {
+				if (this->data[i] != 0 && this->data[i + 1] != 0 && this->data[i + 2] != 0) {
+					allZero = false;
+					return;
+				}
+			}
+			// if all 0, make it single channel
+			if (allZero) {
+				unsigned char* newData = (unsigned char*)malloc(this->width * this->height);
+				for (int i = 0; i < this->width * this->height; i++) {
+					unsigned char alpha = this->data[4 * i + 3];
+					newData[i] = alpha;
+				}
+				free(this->data);
+				this->data = newData;
+				this->channels = 1;
+			}
+		}
+	}
+
 	~TextureData() {
 		if (this->data != nullptr) {
 			free(this->data);

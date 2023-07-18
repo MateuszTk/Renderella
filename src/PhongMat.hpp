@@ -7,10 +7,11 @@ public:
 		: Material(getShaderProgram(), name) {
 
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
-		setSpecular(0.5f);
+		setSpecular(glm::vec3(0.5f));
 		setShininess(32.0f);
 		setDiffuseMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 		setNormalMap(Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)));
+		setSpecularMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 	}
 
 	PhongMat(const PhongMat& other)
@@ -26,8 +27,12 @@ public:
 		setTexture("normalMap", texture);
 	}
 
-	void setSpecular(float specular) {
-		setFloat("specular", specular);
+	void setSpecularMap(const std::shared_ptr<Texture>& texture) {
+		setTexture("specularMap", texture);
+	}
+
+	void setSpecular(const glm::vec3& specular) {
+		setVec3("specular", specular);
 	}
 
 	void setShininess(float shininess) {

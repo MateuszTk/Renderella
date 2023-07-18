@@ -64,11 +64,10 @@ public:
 				}
 				else if (line[0] == 'K' && line[1] == 's'){
 					// specular
-					// TODO: parse specular color as color
 					std::istringstream iss(line.substr(3));
-					float x;
-					iss >> x;
-					materials->at(currentMaterialName).setSpecular(x);
+					glm::vec3 specular;
+					iss >> specular.x >> specular.y >> specular.z;
+					materials->at(currentMaterialName).setSpecular(specular);
 				}
 				else {
 					auto option = line.substr(0, 6);
@@ -95,6 +94,24 @@ public:
 							if (textureData.getChannels() != 0 && diffuseMap != nullptr) {
 								diffuseMap->addAlpha(textureData);
 							}
+						}
+					}
+					else if (option == "map_Ks") {
+						std::string texturePath = directry + line.substr(7);
+						TextureData textureData(texturePath);
+						textureData.optimizeAlphaOnly();
+						auto texture = std::make_shared<Texture>(textureData);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).setSpecularMap(texture);
+						}
+					}
+					else if (option == "map_re") {
+						// map_refl
+						// TODO: should be metalness map
+						std::string texturePath = directry + line.substr(9);
+						auto texture = std::make_shared<Texture>(texturePath);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).setSpecularMap(texture);
 						}
 					}
 				}
