@@ -9,6 +9,7 @@ public:
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
 		setSpecular(0.5f);
 		setShininess(32.0f);
+		setDiffuseMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 		setNormalMap(Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)));
 	}
 

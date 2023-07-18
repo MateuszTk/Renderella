@@ -90,9 +90,11 @@ public:
 					}
 					else if (option == "map_d ") {
 						std::string texturePath = directry + line.substr(6);
-						TextureData textureData(texturePath);
-						if (textureData.getChannels() != 0 && diffuseMap != nullptr) {
-							diffuseMap->addAlpha(textureData);
+						if (texturePath != diffuseMap->getName()) {
+							TextureData textureData(texturePath);
+							if (textureData.getChannels() != 0 && diffuseMap != nullptr) {
+								diffuseMap->addAlpha(textureData);
+							}
 						}
 					}
 				}
@@ -110,12 +112,15 @@ public:
 	static std::vector<Mesh> load(const std::string& path) {
 		std::vector<Mesh> meshes;
 		std::vector<Vertex> vertices;
+		std::vector<int> verticesDuplicatesLinkedList;
 		std::vector<glm::vec2> textureCoords;
 		std::vector<glm::vec3> normals;
 		std::vector<SubMesh> subMeshes = { SubMesh() };
 		std::unique_ptr<std::map<std::string, PhongMat>> materials = nullptr;
 		SubMesh* currentSubMesh = &(subMeshes[0]);
 		unsigned int vertexOffset = 0;
+		unsigned int extraVertexCount = 0;
+		unsigned int extraVertexOffset = 0;
 
 		std::ifstream file(path);
 		if (!file.is_open()) {
@@ -132,13 +137,17 @@ public:
 				if (line[0] == 'o') {
 					if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
 						meshes.push_back(Mesh(vertices, subMeshes));
+						int submeshCount = meshes.back().getSubmeshes().size();
+						std::cout << "   [" << meshes.size() << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es), (" : "), (") 
+							<<  vertices.size() - extraVertexCount << " + " << extraVertexCount << " = " << vertices.size() << " : " << (vertices.size() * 100) / (vertices.size() - extraVertexCount) << "% vertices)\n";
 					}
-					vertexOffset += vertices.size();
+					vertexOffset += vertices.size() - extraVertexCount;
 					vertices.clear();
+					extraVertexCount = 0;
+					verticesDuplicatesLinkedList.clear(); 
 					subMeshes.clear();
 					subMeshes.push_back(SubMesh());
 					currentSubMesh = &(subMeshes[0]);
-					std::cout << '.';
 				}
 				else if (line[0] == 'g') {
 					//group
@@ -152,6 +161,8 @@ public:
 						Vertex vertex;
 						iss >> vertex.position.x >> vertex.position.y >> vertex.position.z;
 						vertices.push_back(vertex);
+						verticesDuplicatesLinkedList.push_back(-1);
+						extraVertexOffset = extraVertexCount;
 					}
 					else if (line[1] == 't') {
 						std::istringstream iss(line.substr(3));
@@ -197,14 +208,54 @@ public:
 							}
 						}
 
-						int localVertexIndex = vertexIndex - 1 - vertexOffset;
+						int localVertexIndex = vertexIndex - 1 - vertexOffset + extraVertexOffset;						
+						Vertex& vert = vertices[localVertexIndex];
+						Vertex newVertex = vert;
 						if (textureIndex > 0) {
-							vertices[localVertexIndex].texture = textureCoords[textureIndex - 1];
+							newVertex.texture = textureCoords[textureIndex - 1];
 						}
 						if (normalIndex > 0) {
-							vertices[localVertexIndex].normal = normals[normalIndex - 1];
+							newVertex.normal = normals[normalIndex - 1];
 						}
-						currentSubMesh->elements.push_back(localVertexIndex);
+
+						if (vert.normal == glm::vec3(0.0f) && vert.texture == glm::vec2(0.0f)) {
+							// this vertex has not been processed yet
+							vert = newVertex;
+							currentSubMesh->elements.push_back(localVertexIndex);
+						}
+						else {
+							if (vert.texture == newVertex.texture && vert.normal == newVertex.normal) {
+								// this vertex has been processed and is the same as the new one
+								currentSubMesh->elements.push_back(localVertexIndex);
+							}
+							else {
+								while (true) {
+									// this vertex has been processed and is different from the new one
+									// check if there is a vertex with the same position and texture
+									int duplicateVertexIndex = verticesDuplicatesLinkedList[localVertexIndex];
+									if (duplicateVertexIndex == -1) {
+										// there is no vertex with the same position and texture
+										// create a new vertex
+										vertices.push_back(newVertex);
+										verticesDuplicatesLinkedList.push_back(-1);
+										verticesDuplicatesLinkedList[localVertexIndex] = vertices.size() - 1;
+										currentSubMesh->elements.push_back(vertices.size() - 1);
+										extraVertexCount++;
+										break;
+									}
+									else {
+										if (vertices[duplicateVertexIndex].texture == newVertex.texture && vertices[duplicateVertexIndex].normal == newVertex.normal) {
+											// there is a vertex with the same position and texture, use it
+											currentSubMesh->elements.push_back(duplicateVertexIndex);
+											break;
+										}
+										else {
+											localVertexIndex = duplicateVertexIndex;
+										}
+									}
+								}
+							}
+						}
 					}
 					// calculate tangent
 					Vertex& vert0 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 3]];
@@ -274,24 +325,16 @@ public:
 					materials = loadMtl(mtlPath);
 				}
 			}
-			std::cout << '\n';
-		}
-
-		for (Vertex& vertex : vertices) {
-			vertex.normal = glm::normalize(vertex.normal);
-			vertex.tangent = glm::normalize(vertex.tangent);
-			vertex.bitangent = glm::normalize(vertex.bitangent);
 		}
 
 		if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
 			meshes.push_back(Mesh(vertices, subMeshes));
+			int submeshCount = meshes.back().getSubmeshes().size();
+			std::cout << "   [" << meshes.size() << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es), (" : "), (")
+				<< vertices.size() - extraVertexCount << " + " << extraVertexCount << " = " << vertices.size() << " : " << (vertices.size() * 100) / (vertices.size() - extraVertexCount) << "% vertices)\n";
 		}
 
-		std::cout << "[obj] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";
-		for (int i = 0; i < meshes.size(); i++) {
-			int submeshCount = meshes[i].getSubmeshes().size();
-			std::cout << "   [" << i << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es" : "") << ")\n";
-		}	
+		std::cout << "[obj] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";	
 		std::cout << '\n';
 		return meshes;
 	}
