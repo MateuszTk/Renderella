@@ -1,6 +1,7 @@
 #version 430 core
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 CurrentSSR;
   
 in vec2 TexCoords;
 in vec3 FragPos;
@@ -13,6 +14,8 @@ uniform sampler2D ssrTexture;
 uniform sampler2D depthTexture;
 
 void main() {
+	CurrentSSR = texture(ssrTexture, TexCoords);
+
 	// Deferred
 	vec4 fragLight = texture(deferredLight, TexCoords);
 	fragLight.rgb *= fragLight.a * 4.0 + 1.0;
@@ -21,21 +24,25 @@ void main() {
 
 	float depthValue = texture(depthTexture, TexCoords).r;
 	if (depthValue < 1.0) {
-		// SSR
-		vec3 ssr = texture(ssrTexture, TexCoords).xyz;
-		vec4 ssrLight = texture(deferredLight, ssr.xy);
-		ssrLight.rgb *= ssrLight.a * 4.0 + 1.0;
-		vec4 ssrReflection = texture(deferredReflection, ssr.xy);
-		float ssrSpecular = ssrReflection.w;
-		vec3 ssrColor = texture(colorTexture, ssr.xy).xyz * (ssrLight.xyz + ssrReflection.xyz * ssrSpecular);
+		// SSR		
+		vec2 ssrTexelSize = 1.0 / vec2(textureSize(ssrTexture, 0));
+		vec4 ssrColor = vec4(0.0);
+		for (int y = -1; y <= 1; ++y) {
+			for (int x = -1; x <= 1; ++x) {
+				vec2 offset = vec2(x, y) * ssrTexelSize;
+				vec4 ssr = texture(ssrTexture, TexCoords + offset);
+				ssrColor += ssr;
+			}
+		}
+		ssrColor /= 9.0;
 
 		// Mix
 		vec3 color = texture(colorTexture, TexCoords).xyz;
-		vec3 mixedReflection = mix(fragReflection.xyz, ssrColor, ssr.z) * specular;
+		vec3 mixedReflection = mix(fragReflection.xyz, ssrColor.xyz, ssrColor.w) * specular;
 		
 		FragColor = vec4(color * (fragLight.xyz + mixedReflection), 1.0);
 	}
 	else{
 		FragColor = vec4(fragReflection.xyz, 1.0);
-	}
+	}	
 }

@@ -8,12 +8,19 @@ in vec3 CameraRay;
 
 // color: xyz, shininess: w
 uniform sampler2D screenTexture0;
-// light: xyz, specular: w
+// specular: w
 uniform sampler2D screenTexture1;
 //normal: xyz
 uniform sampler2D screenTexture2;
 // depth
 uniform sampler2D depthTexture;
+
+uniform sampler2D prevFrame;
+uniform	sampler2D prevSSR;
+uniform sampler2D prevDepth;
+uniform mat4 prevProjectionView;
+
+uniform int frameCounter;
 
 uniform vec3 viewPos;
 uniform vec3 viewDir;
@@ -31,6 +38,18 @@ uniform mat4 projection;
 const float maxDistance = 8.0;
 const float resolution = 0.25;
 const float thickness = 0.005;
+
+float hash1(inout float seed) {
+	return fract(sin(seed += 0.1) * 43758.5453123);
+}
+
+vec2 hash2(inout float seed) {
+	return fract(sin(vec2(seed += 0.1, seed += 0.1)) * vec2(43758.5453123, 22578.1459123));
+}
+
+vec3 hash3(inout float seed) {
+	return fract(sin(vec3(seed += 0.1, seed += 0.1, seed += 0.1)) * vec3(43758.5453123, 22578.1459123, 19642.3490423));
+}
 
 float linearizeDepth(float d, float zNear, float zFar) {
     float ndc = 2.0 * d - 1.0;
@@ -111,7 +130,11 @@ vec4 ssr(vec3 worldPixelPos){
 	vec3 VSPostion = vec3(view * vec4(worldPixelPos, 1.0));
 	vec3 VSNormal = normalize(vec3(view * vec4(texture(screenTexture2, TexCoords).rgb * 2.0 - 1.0, 0.0)));
 
-	vec3 reflectionDir = normalize(reflect(normalize(VSPostion), VSNormal));
+	float seed = FragPos.x + FragPos.y * 3.43121412313 + fract(1.12345314312 * float(frameCounter));
+	float roughness = 1.0 - texture(screenTexture0, TexCoords).a;
+	roughness *= roughness;
+	vec3 jitter = (hash3(seed) * 2.0 - 1.0) * roughness * 0.5;
+	vec3 reflectionDir = normalize(reflect(normalize(VSPostion), VSNormal) + jitter);
 
 	vec4 startVS = vec4(VSPostion, 1.0);
 	float dist = ((reflectionDir.z > 0.0) ? (-VSPostion.z - NEAR) : (FAR - VSPostion.z)) - 0.001;
@@ -136,7 +159,6 @@ vec4 ssr(vec3 worldPixelPos){
 		visibility = 0.0;
 	}
 
-	//(1.0 - max(dot(-normalize(VSPostion), reflectionDir), 0.0));// * (1.0 - traced.z);
 	return vec4(traced, visibility);
 }
 
@@ -148,8 +170,21 @@ void main() {
 		vec4 lightData = texture(screenTexture1, TexCoords);
 		
 		if (lightData.w >= SPECULARITY_THRESHOLD) {
-			vec4 ssrUV = ssr(worldPixelPos).xywz;
-			FragColor = ssrUV;
+			vec4 ssrUV = ssr(worldPixelPos);
+			vec4 ssrColor = vec4(texture(prevFrame, ssrUV.xy).xyz, ssrUV.w);
+			
+			// temporal reprojection
+			vec4 previousProjection = prevProjectionView * vec4(worldPixelPos, 1.0);
+			previousProjection.xyz /= previousProjection.w;
+			previousProjection.xyz = (previousProjection.xyz + 1.0) * 0.5;
+
+			if (abs(texture(prevDepth, previousProjection.xy).r - previousProjection.z) < 0.01) {
+				vec4 prevSSRColor = texture(prevSSR, previousProjection.xy);
+				FragColor = (ssrColor * 0.1 + prevSSRColor) / 1.1;
+			}
+			else{
+				FragColor = vec4(ssrColor.xyz, 0.0);
+			}
 		}
 		else {
 			FragColor = vec4(0.0);

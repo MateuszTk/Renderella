@@ -1,5 +1,5 @@
 
-//#define ENABLE_TEXTURE_CACHE
+#define ENABLE_TEXTURE_CACHE
 #define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
 
 #include "WindowManager.hpp"
@@ -34,7 +34,8 @@ int main() {
 	Framebuffer lightFramebuffer(4096, 4096, 0);
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Framebuffer defferedFramebuffer(window.getWidth(), window.getHeight(), 2);
-	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1, true);
+	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1);
+	Framebuffer composeFramebuffer(window.getWidth(), window.getHeight(), 2);
 
 	Mesh deferredPlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/deferred.frag");
 	deferredPlane.getSubmeshes()[0].material.setTexture("lightDepth", lightFramebuffer.getDepthTex());
@@ -45,6 +46,11 @@ int main() {
 
 	Mesh screenSpacePlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
 	screenSpacePlane.getSubmeshes()[0].material.setIncludeCameraUniform(true);
+	screenSpacePlane.getSubmeshes()[0].material.setIncludeFrameCounterUniform(true);
+	screenSpacePlane.getSubmeshes()[0].material.setTexture("prevFrame", composeFramebuffer.getColorTexs()[0]);
+	screenSpacePlane.getSubmeshes()[0].material.setTexture("prevSSR", composeFramebuffer.getColorTexs()[1]);
+	screenSpacePlane.getSubmeshes()[0].material.setTexture("prevDepth", composeFramebuffer.getDepthTex());
+	screenSpacePlane.getSubmeshes()[0].material.setMat4("prevProjectionView", glm::mat4(1.0f));
 
 	Mesh composePlane = Framebuffer::produceEmptyFbPlane("assets/shaders/screen.vert", "assets/shaders/compose.frag");
 	composePlane.getSubmeshes()[0].material.setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
@@ -59,6 +65,7 @@ int main() {
 	auto shadowMat = std::make_shared<Material>(shadowProgram);
 
 	while (window.frame(false, true)) {
+		glm::mat4 prevCamera = camera.getCameraMatrix();
 		camera.update(window);
 
 		light.setColor(glm::vec3(0.5f + sin(glfwGetTime() * 1.1f), 0.5f + sin(glfwGetTime()), 0.5f + sin(glfwGetTime() * 0.5f)));
@@ -93,13 +100,26 @@ int main() {
 		// screen space
 		screenSpaceFramebuffer.bind(true);
 		glDisable(GL_DEPTH_TEST);
+		screenSpacePlane.getSubmeshes()[0].material.setMat4("prevProjectionView", prevCamera);
 		screenSpacePlane.draw();
 
 		// compose
-		screenSpaceFramebuffer.unbind();
+		composeFramebuffer.bind(true);
 		glDisable(GL_DEPTH_TEST);
-		glViewport(0, 0, window.getWidth(), window.getHeight());
 		composePlane.draw();
+
+		// copy depth for next frame
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFramebuffer.getFbo());
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeFramebuffer.getFbo());
+		glReadBuffer(GL_DEPTH_ATTACHMENT);
+		glDrawBuffer(GL_DEPTH_ATTACHMENT);
+		glBlitFramebuffer(0, 0, mainFramebuffer.getWidth(), mainFramebuffer.getHeight(), 0, 0, composeFramebuffer.getWidth(), composeFramebuffer.getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+		// display - copy to default framebuffer
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, composeFramebuffer.getFbo());
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glBlitFramebuffer(0, 0, composeFramebuffer.getWidth(), composeFramebuffer.getHeight(), 0, 0, window.getWidth(), window.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 
 	return 0;

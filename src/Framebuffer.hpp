@@ -87,6 +87,14 @@ public:
 		return fbo;
 	}
 
+	int getWidth() {
+		return width;
+	}
+
+	int getHeight() {
+		return height;
+	}
+
 	void bind(bool setViewport = false) {
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		if (setViewport) {
@@ -95,6 +103,10 @@ public:
 	}
 
 	void unbind() {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	static void bindDefault() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 

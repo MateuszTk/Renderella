@@ -19,13 +19,15 @@ public:
 		viewPosLoc = UniLocation("viewPos", shaderProgram);
 		viewDirLoc = UniLocation("viewDir", shaderProgram);
 		nearFarLoc = UniLocation("nearFar", shaderProgram);
+		frameCounterLoc = UniLocation("frameCounter", shaderProgram);
 	}
 
 	Material(const Material& other) 
-		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), includeCameraUniform(other.includeCameraUniform),
+		: shaderProgram(other.shaderProgram), textures(other.textures), vec3s(other.vec3s), floats(other.floats), name(other.name), includeLightsUniforms(other.includeLightsUniforms), 
+		includeCameraUniform(other.includeCameraUniform), includeFrameCounterUniform(other.includeFrameCounterUniform),
 		lightPosLoc(other.lightPosLoc), lightColorLoc(other.lightColorLoc), 
 		lightDirLoc(other.lightDirLoc), lightSpaceMatrixLoc(other.lightSpaceMatrixLoc),
-		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc) {
+		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc), frameCounterLoc(other.frameCounterLoc) {
 
 	}
 
@@ -45,6 +47,7 @@ public:
 		this->viewPosLoc.update(shaderProgram);
 		this->viewDirLoc.update(shaderProgram);
 		this->nearFarLoc.update(shaderProgram);
+		this->frameCounterLoc.update(shaderProgram);
 
 		{
 			auto newMap = std::unordered_map<UniLocation, std::shared_ptr<Texture>>();
@@ -136,6 +139,14 @@ public:
 		return includeCameraUniform;
 	}
 
+	void setIncludeFrameCounterUniform(bool includeFrameCounterUniform) {
+		this->includeFrameCounterUniform = includeFrameCounterUniform;
+	}
+
+	bool getIncludeFrameCounterUniform() const {
+		return includeFrameCounterUniform;
+	}
+
 	void use() {
 		if (overrideMaterial != nullptr && overrideMaterial.get() != this) {
 			overrideMaterial->use();
@@ -177,6 +188,9 @@ public:
 			shaderProgram->setVec3(viewDirLoc, activeCamera->getDirection());
 			shaderProgram->setVec2(nearFarLoc, glm::vec2(activeCamera->getNearPlane(), activeCamera->getFarPlane()));
 		}
+		if (includeFrameCounterUniform) {
+			shaderProgram->setInt(frameCounterLoc, WindowManager::getFrameCounter());
+		}
 	}
 
 	static void setOverrideMaterial(const std::shared_ptr<Material>& material) {
@@ -192,6 +206,7 @@ protected:
 	std::string name;
 	bool includeLightsUniforms = false;
 	bool includeCameraUniform = false;
+	bool includeFrameCounterUniform = false;
 
 private:
 	UniLocation lightPosLoc = UniLocation("lightPos", shaderProgram);
@@ -202,6 +217,7 @@ private:
 	UniLocation viewPosLoc = UniLocation("viewPos", shaderProgram);
 	UniLocation viewDirLoc = UniLocation("viewDir", shaderProgram);
 	UniLocation nearFarLoc = UniLocation("nearFar", shaderProgram);
+	UniLocation frameCounterLoc = UniLocation("frameCounter", shaderProgram);
 
 	static std::shared_ptr<Material> overrideMaterial;
 };

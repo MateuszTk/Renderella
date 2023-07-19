@@ -123,7 +123,7 @@ void main() {
 		}
 		
 		float roughness = 1.0 - color.w;
-		roughness *= roughness;
+		//roughness *= roughness;
 		vec3 reflectDir = reflect(normalize(CameraRay), normal);
 		vec3 skyReflection = getSkyColor(reflectDir, roughness);
 

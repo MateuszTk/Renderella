@@ -49,6 +49,8 @@ public:
 			this->showFPS();
 		}
 
+		frameCounter = (frameCounter + 1) % 0x7FFFFFFF;
+
 		return !glfwWindowShouldClose(this->window);
 	}
 
@@ -72,6 +74,10 @@ public:
 		return (float)this->width / (float)this->height;
 	}
 
+	static int getFrameCounter() {
+		return frameCounter;
+	}
+
 	~WindowManager() {
 		glfwTerminate();
 	}
@@ -82,6 +88,8 @@ private:
 	GLFWwindow* window;
 	double lastFrameTime;
 	double deltaTime;
+
+	static int frameCounter;
 
 	double lastFpsTime;
 	unsigned int fpsCount;
