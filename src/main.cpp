@@ -1,8 +1,13 @@
+
+//#define ENABLE_TEXTURE_CACHE
+#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+
 #include "WindowManager.hpp"
 #include "Shader.hpp"
 #include "ShaderProgram.hpp"
 #include "Mesh.hpp"
 #include "Vertex.hpp"
+#include "TextureData.hpp"
 #include "Texture.hpp"
 #include "Material.hpp"
 #include "ObjLoader.hpp"
@@ -19,7 +24,7 @@ int main() {
 	WindowManager window(1280, 720, "Window");
 
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
-	
+
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);

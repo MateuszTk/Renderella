@@ -89,7 +89,7 @@ public:
 					}
 					else if (option == "map_d ") {
 						std::string texturePath = directry + line.substr(6);
-						if (texturePath != diffuseMap->getName()) {
+						if (texturePath != diffuseMap->getPath()) {
 							TextureData textureData(texturePath);
 							if (textureData.getChannels() != 0 && diffuseMap != nullptr) {
 								diffuseMap->addAlpha(textureData);

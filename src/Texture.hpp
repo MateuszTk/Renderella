@@ -37,7 +37,7 @@ public:
 				glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 			}
 			else {
-				std::cout << "Error: unsupported number of channels \"" << textureData.getName() << "\"\n";
+				std::cout << "Error: unsupported number of channels \"" << textureData.getPath() << "\"\n";
 			}
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}

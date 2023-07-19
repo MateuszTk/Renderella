@@ -2,18 +2,30 @@
 #include <iostream>
 #include "stb_image.h"
 #include <string>
+#include <fstream>
+
+#ifndef CACHE_LOCATION
+	#define CACHE_LOCATION "cache/"
+#endif
 
 class TextureData {
 public:
-	TextureData(const std::string& path, const std::string& name = "") : name((name == "") ? path : name){
-		stbi_set_flip_vertically_on_load(true);
-		this->data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-		if (!this->data) {
-			std::cout << "Error: failed to load texture \"" << path << "\"\n";
-			width = 0;
-			height = 0;
-			channels = 0;
-			data = nullptr;
+	TextureData(const std::string& path) {
+		this->path = path;
+		this->name = path.substr(path.find_last_of("/\\") + 1);
+		if (!loadTextureCache()) {
+			stbi_set_flip_vertically_on_load(true);
+			this->data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+			if (!this->data) {
+				std::cout << "Error: failed to load texture \"" << path << "\"\n";
+				width = 0;
+				height = 0;
+				channels = 0;
+				data = nullptr;
+			}
+			else {
+				createTextureCache();
+			}
 		}
 	}
 
@@ -37,9 +49,13 @@ public:
 		return this->name;
 	}
 
+	std::string getPath() const {
+		return this->path;
+	}
+
 	void addAlpha(const TextureData& mask) {
 		if (this->width != mask.getWidth() || this->height != mask.getHeight()) {
-			std::cout << "Error: opacity mask \"" << mask.getName() << "\" does not match texture \"" << this->name << "\"\n";
+			std::cout << "Error: opacity mask \"" << mask.getPath() << "\" does not match texture \"" << this->name << "\"\n";
 			return;
 		}
 
@@ -56,7 +72,7 @@ public:
 			this->channels = 4;
 		}
 		else {
-			std::cout << "Error: opacity mask \"" << mask.getName() << "\" has " << mask.getChannels() << " channels, expected 1\n";
+			std::cout << "Error: opacity mask \"" << mask.getPath() << "\" has " << mask.getChannels() << " channels, expected 1\n";
 		}
 	}
 
@@ -97,4 +113,46 @@ private:
 	int height;
 	int channels;
 	std::string name;
+	std::string path;
+
+	void createTextureCache() {
+#ifdef ENABLE_TEXTURE_CACHE
+		std::size_t pathHash = std::hash<std::string>{}(this->path);
+		std::ofstream file(CACHE_LOCATION + this->name + std::to_string(pathHash) + ".cache", std::ios::binary);
+		if (file.is_open()) {
+
+			file.write((char*)&this->width, sizeof(int));
+			file.write((char*)&this->height, sizeof(int));
+			file.write((char*)&this->channels, sizeof(int));
+			file.write((char*)this->data, this->width * this->height * this->channels);
+			file.close();
+			std::cout << "Created texture cache for \"" << this->name << "\"\n";
+		}
+		else {
+			std::cout << "Error: failed to create texture cache for \"" << this->name << "\"\n";
+		}
+#endif
+	}
+
+	bool loadTextureCache() {
+#ifdef ENABLE_TEXTURE_CACHE
+		std::size_t pathHash = std::hash<std::string>{}(this->path);
+		std::ifstream file(CACHE_LOCATION + this->name + std::to_string(pathHash) + ".cache", std::ios::binary);
+		if (file.is_open()) {
+			file.read((char*)&this->width, sizeof(int));
+			file.read((char*)&this->height, sizeof(int));
+			file.read((char*)&this->channels, sizeof(int));
+			this->data = (unsigned char*)malloc(this->width * this->height * this->channels);
+			file.read((char*)this->data, this->width * this->height * this->channels);
+			file.close();
+			std::cout << "Loaded texture \"" << this->name << "\" from cache\n";
+			return true;
+		}
+		else {
+			return false;
+		}
+#else
+		return false;
+#endif
+	}
 };

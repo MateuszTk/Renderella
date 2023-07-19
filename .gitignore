@@ -2,3 +2,5 @@
 out/
 build/
 /CMakeSettings.json
+cache/
+cache2/
