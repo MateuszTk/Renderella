@@ -222,10 +222,12 @@ public:
 					std::istringstream iss(line.substr(2));
 					//vertexstring is a string of the form "vertexIndex/textureIndex/normalIndex"
 					std::string vertexString;
+					int vertexNumber = 0;
 					while (iss >> vertexString) {
+						vertexNumber++;
 						int vertexIndex = std::stoi(vertexString);
 						if (vertexIndex < 0) {
-							vertexIndex = vertices.size() + vertexIndex + 1;
+							vertexIndex = vertices.size() + vertexIndex + 1 + extraVertexOffset - extraVertexCount;
 						}
 						int textureIndex = 0;
 						int normalIndex = 0;
@@ -298,36 +300,53 @@ public:
 							}
 						}
 					}
-					// calculate tangent
-					Vertex& vert0 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 3]];
-					Vertex& vert1 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 2]];
-					Vertex& vert2 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 1]];
 
-					glm::vec3 v0 = vert0.position;
-					glm::vec3 v1 = vert1.position;
-					glm::vec3 v2 = vert2.position;
+					if (vertexNumber > 3) {
+						// triangulate
+						int firstVertex = currentSubMesh->elements[currentSubMesh->elements.size() - 4];
+						int secondVertex = currentSubMesh->elements[currentSubMesh->elements.size() - 3];
+						int thirdVertex = currentSubMesh->elements[currentSubMesh->elements.size() - 2];
+						int fourthVertex = currentSubMesh->elements[currentSubMesh->elements.size() - 1];
+						currentSubMesh->elements.pop_back();
 
-					glm::vec2 uv0 = vert0.texture;
-					glm::vec2 uv1 = vert1.texture;
-					glm::vec2 uv2 = vert2.texture;
+						currentSubMesh->elements.push_back(thirdVertex);
+						currentSubMesh->elements.push_back(fourthVertex);
+						currentSubMesh->elements.push_back(firstVertex);
+					}
 
-					glm::vec3 edge1 = v1 - v0;
-					glm::vec3 edge2 = v2 - v0;
+					const int triangleCount = (vertexNumber < 4) ? 1 : 2;
+					for (int triangle = 0; triangle < triangleCount; triangle++) {
+						// calculate tangent
+						Vertex& vert0 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 3 - triangle * 3]];
+						Vertex& vert1 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 2 - triangle * 3]];
+						Vertex& vert2 = vertices[currentSubMesh->elements[currentSubMesh->elements.size() - 1 - triangle * 3]];
 
-					glm::vec2 deltaUV1 = uv1 - uv0;
-					glm::vec2 deltaUV2 = uv2 - uv0;
+						glm::vec3 v0 = vert0.position;
+						glm::vec3 v1 = vert1.position;
+						glm::vec3 v2 = vert2.position;
 
-					float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
-					glm::vec3 tangent = (edge1 * deltaUV2.y - edge2 * deltaUV1.y) * r;
-					glm::vec3 bitangent = (edge2 * deltaUV1.x - edge1 * deltaUV2.x) * r;
+						glm::vec2 uv0 = vert0.texture;
+						glm::vec2 uv1 = vert1.texture;
+						glm::vec2 uv2 = vert2.texture;
 
-					vert0.tangent = tangent;
-					vert1.tangent = tangent;
-					vert2.tangent = tangent;
-					// TODO: bitangent could be calculated in shader, but for some reason it produces artifacts
-					vert0.bitangent = bitangent;
-					vert1.bitangent = bitangent;
-					vert2.bitangent = bitangent;
+						glm::vec3 edge1 = v1 - v0;
+						glm::vec3 edge2 = v2 - v0;
+
+						glm::vec2 deltaUV1 = uv1 - uv0;
+						glm::vec2 deltaUV2 = uv2 - uv0;
+
+						float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+						glm::vec3 tangent = (edge1 * deltaUV2.y - edge2 * deltaUV1.y) * r;
+						glm::vec3 bitangent = (edge2 * deltaUV1.x - edge1 * deltaUV2.x) * r;
+
+						vert0.tangent = tangent;
+						vert1.tangent = tangent;
+						vert2.tangent = tangent;
+						// TODO: bitangent could be calculated in shader, but for some reason it produces artifacts
+						vert0.bitangent = bitangent;
+						vert1.bitangent = bitangent;
+						vert2.bitangent = bitangent;
+					}
 				}
 				else if (line[0] == 'u' && line[1] == 's') {
 					//usemtl
