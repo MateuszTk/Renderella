@@ -9,6 +9,7 @@ public:
 		setAmbient(glm::vec3(0.05f, 0.05f, 0.05f));
 		setSpecular(glm::vec3(0.5f));
 		setShininess(1000.0f);
+		setDiffuse(glm::vec3(1.0f, 1.0f, 1.0f));
 		setDiffuseMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 		setNormalMap(Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)));
 		setSpecularMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
@@ -34,6 +35,10 @@ public:
 
 	void setShininessMap(const std::shared_ptr<Texture>& texture) {
 		setTexture("shininessMap", texture);
+	}
+
+	void setDiffuse(const glm::vec3& diffuse) {
+		setVec3("diffuse", diffuse);
 	}
 
 	void setSpecular(const glm::vec3& specular) {

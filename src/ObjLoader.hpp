@@ -69,6 +69,13 @@ public:
 					iss >> specular.x >> specular.y >> specular.z;
 					materials->at(currentMaterialName).setSpecular(specular);
 				}
+				else if (line[0] == 'K' && line[1] == 'd') {
+					// color
+					std::istringstream iss(line.substr(3));
+					glm::vec3 color;
+					iss >> color.x >> color.y >> color.z;
+					materials->at(currentMaterialName).setDiffuse(color);
+				}
 				else {
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
@@ -147,6 +154,7 @@ public:
 		unsigned int vertexOffset = 0;
 		unsigned int extraVertexCount = 0;
 		unsigned int extraVertexOffset = 0;
+		std::string activeMaterialName = "";
 
 		std::ifstream file(path);
 		if (!file.is_open()) {
@@ -172,7 +180,14 @@ public:
 					extraVertexCount = 0;
 					verticesDuplicatesLinkedList.clear(); 
 					subMeshes.clear();
-					subMeshes.push_back(SubMesh());
+					SubMesh subMesh;
+					try {
+						subMesh.material = materials->at(activeMaterialName);
+					}
+					catch (std::out_of_range e) {
+
+					}
+					subMeshes.push_back(std::move(subMesh));
 					currentSubMesh = &(subMeshes[0]);
 				}
 				else if (line[0] == 'g') {
@@ -319,10 +334,10 @@ public:
 					if (materials != nullptr) {
 						// find if submesh with this material already exists
 						bool found = false;
-						std::string matName = line.substr(7);
+						activeMaterialName = line.substr(7);
 						for (auto& subMesh : subMeshes) {
 							const std::string& curMatName = subMesh.material.getName();
-							if (curMatName.length() == 0 || curMatName == matName) {
+							if (curMatName.length() == 0 || curMatName == activeMaterialName) {
 								found = true;
 								currentSubMesh = &subMesh;
 								break;
@@ -337,10 +352,10 @@ public:
 							}
 							// assign material
 							try {
-								currentSubMesh->material = materials->at(line.substr(7));
+								currentSubMesh->material = materials->at(activeMaterialName);
 							}
 							catch (std::out_of_range e) {
-								std::cout << "[obj] Material not matched: " << line.substr(7) << "\n";
+								std::cout << "[obj] Material not matched: " << activeMaterialName << "\n";
 							}
 						}
 					}
@@ -361,7 +376,6 @@ public:
 		}
 
 		std::cout << "[obj] Loaded \'" << path << "\' (" << meshes.size() << " mesh" << ((meshes.size() > 1) ? "es" : "") << ")\n";	
-		std::cout << '\n';
 		return meshes;
 	}
 };

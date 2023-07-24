@@ -8,6 +8,7 @@ in vec3 FragPos;
 in vec2 TexCoord;
 in mat3 TBN;
 
+uniform vec3 diffuse;
 uniform vec3 specular;
 uniform float shininess;
 
@@ -25,7 +26,7 @@ void main() {
 	vec3 norm = texture(normalMap, TexCoord).rgb * 2.0 - 1.0;
 	norm = normalize(TBN * norm);
 
-	FragColor = vec4(objectColor.rgb, texture(shininessMap, TexCoord).r * clamp(shininess / 1000.0, 0.0, 1.0));
+	FragColor = vec4(objectColor.rgb * diffuse, texture(shininessMap, TexCoord).r * clamp(shininess / 1000.0, 0.0, 1.0));
 	vec3 specularTexColor = texture(specularMap, TexCoord).rgb;
 	FragLight = vec4(0.0, 0.0, 0.0, max(specularTexColor.r, max(specularTexColor.g, specularTexColor.b)) * specular.r);
 	FragNormal = vec4(norm * 0.5 + 0.5, 1.0f);

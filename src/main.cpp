@@ -1,6 +1,6 @@
 
-#define ENABLE_TEXTURE_CACHE
-#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+//#define ENABLE_TEXTURE_CACHE
+//#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
 
 #include "WindowManager.hpp"
 #include "Shader.hpp"
@@ -27,17 +27,18 @@ int main() {
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
-	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);
-	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f), glm::vec3(0.1f, -0.9f, 0.4f));
+	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);	
+	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f), glm::vec3(0.8f, -2.2f, 0.4f));
 	light1.setFov(50.0f);
 
-	Framebuffer lightFramebuffer(4096, 4096, 0);
+	Framebuffer lightFramebuffer(4096, 4096, 0, false, true);
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Framebuffer defferedFramebuffer(window.getWidth(), window.getHeight(), 2);
 	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1);
 	Framebuffer composeFramebuffer(window.getWidth(), window.getHeight(), 2);
 
 	Mesh deferredPlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/deferred.frag");
+	deferredPlane.getSubmeshes()[0].material.setTexture("lightDepthShadowSampler", lightFramebuffer.getDepthTex());
 	deferredPlane.getSubmeshes()[0].material.setTexture("lightDepth", lightFramebuffer.getDepthTex());
 	deferredPlane.getSubmeshes()[0].material.setIncludeLightsUniforms(true);
 	deferredPlane.getSubmeshes()[0].material.setIncludeCameraUniform(true);
@@ -64,6 +65,9 @@ int main() {
 	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader);
 	auto shadowMat = std::make_shared<Material>(shadowProgram);
 
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CCW);
+
 	while (window.frame(false, true)) {
 		glm::mat4 prevCamera = camera.getCameraMatrix();
 		camera.update(window);
@@ -75,6 +79,8 @@ int main() {
 		lightFramebuffer.bind(true);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT);
+		//light1.setPosition(camera.getPosition() - light1.getDirection() * 30.0f);
 		light1.use();
 		Material::setOverrideMaterial(shadowMat);
 		for (auto& mesh : sponza) {
@@ -87,6 +93,7 @@ int main() {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_BACK);
 		camera.use();
 		for (auto& mesh : sponza) {
 			mesh.draw();
