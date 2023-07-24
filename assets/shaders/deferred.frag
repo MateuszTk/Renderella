@@ -35,26 +35,7 @@ uniform vec2 nearFar;
 #define NEAR nearFar.x
 #define FAR nearFar.y
 
-const vec2 poissonDisk[16] = {
-	vec2( -0.94201624, -0.39906216 ),
-	vec2( 0.94558609, -0.76890725 ),
-	vec2( -0.094184101, -0.92938870 ),
-	vec2( 0.34495938, 0.29387760 ),
-	vec2( -0.91588581, 0.45771432 ),
-	vec2( -0.81544232, -0.87912464 ),
-	vec2( -0.38277543, 0.27676845 ),
-	vec2( 0.97484398, 0.75648379 ),
-	vec2( 0.44323325, -0.97511554 ),
-	vec2( 0.53742981, -0.47373420 ),
-	vec2( -0.26496911, -0.41893023 ),
-	vec2( 0.79197514, 0.19090188 ),
-	vec2( -0.24188840, 0.99706507 ),
-	vec2( -0.81409955, 0.91437590 ),
-	vec2( 0.19984126, 0.78641367 ),
-	vec2( 0.14383161, -0.14100790 )
-};
-
-#define LIGHT_SIZE_UV 4.0
+#define LIGHT_SIZE_UV 12.0
 #define BIAS 0.00025
 #define NORMAL_BIAS 0.026
 
@@ -80,14 +61,19 @@ vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize) {
 
 	float searchWidth = LIGHT_SIZE_UV;
 
-	int sampleCount = 16;
-	for (int sampleN = 0; sampleN < sampleCount; sampleN += 1) {
-		vec2 offset = poissonDisk[sampleN] * texelSize * searchWidth;
-		float texelDepth = textureLod(lightDepth, projCoords.xy + offset, 0.0).r;
-		if (texelDepth < projCoords.z + BIAS) {
-			blockerDistance += texelDepth;
-			numBlockers += 1.0;
+	int sampleCount = 24;
+	int numRings = 2;
+	for (int ring = 0; ring < numRings; ring++){
+		for (int sampleN = 0; sampleN < sampleCount; sampleN++) {
+			float angle = float(sampleN) / float(sampleCount) * 2.0 * PI;
+			vec2 offset = vec2(cos(angle), sin(angle)) * texelSize * searchWidth;
+			float texelDepth = textureLod(lightDepth, projCoords.xy + offset, 0.0).r;
+			if (texelDepth < projCoords.z + BIAS) {
+				blockerDistance += texelDepth;
+				numBlockers += 1.0;
+			}
 		}
+		searchWidth /= 2.0;
 	}
 	if (numBlockers > 0.0) {
 		blockerDistance /= numBlockers;
@@ -99,11 +85,16 @@ vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize) {
 float PCF_filter(vec3 projCoords, vec2 texelSize, float uvRadius) {
 	float sum = 0.0;
 	int sampleCount = 16;
-	for (int sampleN = 0; sampleN < sampleCount; sampleN++) {
-		vec2 offset = uvRadius * poissonDisk[sampleN] * texelSize;
-		sum += texture(lightDepthShadowSampler, vec3(projCoords.xy + offset, projCoords.z + BIAS));
+	int numRings = 2;
+	for (int ring = 0; ring < numRings; ring++){
+		for (int sampleN = 0; sampleN < sampleCount; sampleN++) {
+			float angle = float(sampleN) / float(sampleCount) * 2.0 * PI;
+			vec2 offset = uvRadius * vec2(cos(angle), sin(angle)) * texelSize;
+			sum += texture(lightDepthShadowSampler, vec3(projCoords.xy + offset, projCoords.z + BIAS));
+		}
+		uvRadius /= 2.0;
 	}
-	return sum / float(sampleCount);
+	return sum / float(sampleCount * numRings);
 }
 
 float directionalShadow(mat4 lightSpaceMatrix, vec3 normal, vec3 worldPixelPos) {
