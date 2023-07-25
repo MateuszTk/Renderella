@@ -33,7 +33,7 @@ public:
 			}
 			else if (nrChannels == 1) {
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, textureData.getData());
-				GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+				GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_RED };
 				glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 			}
 			else {

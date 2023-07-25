@@ -9,9 +9,9 @@ in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 CameraRay;
 
-// color: xyz, shininess: w
+// color: xyzw
 uniform sampler2D screenTexture0;
-// specular: w
+// shininess: x, specular: y
 uniform sampler2D screenTexture1;
 //normal: xyz
 uniform sampler2D screenTexture2;
@@ -132,9 +132,9 @@ void main() {
 	float depthValue = texture(depthTexture, TexCoords).r;
 	if (depthValue < 1.0) {
 		vec4 color = texture(screenTexture0, TexCoords);
-		float shininess = color.w * 1000.0;
 		vec4 lightData = texture(screenTexture1, TexCoords);
-		float specular = lightData.w;
+		float shininess = lightData.x * 1000.0;
+		float specular = lightData.y;
 		vec3 normal = normalize((texture(screenTexture2, TexCoords).rgb - 0.5) * 2.0);
 		vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
 		vec3 cameraRayNorm = normalize(CameraRay);
@@ -172,7 +172,7 @@ void main() {
 			specularReflection += attenuation * specularF;
 		}
 		
-		float roughness = 1.0 - color.w;
+		float roughness = 1.0 - shininess / 1000.0;
 		//roughness *= roughness;
 		vec3 reflectDir = reflect(normalize(CameraRay), normal);
 		vec3 skyReflection = getSkyColor(reflectDir, roughness);

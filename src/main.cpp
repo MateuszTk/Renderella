@@ -16,6 +16,7 @@
 #include "Light.hpp"
 #include "Framebuffer.hpp"
 #include "Primitives.hpp"
+#include "RenderQueue.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -23,7 +24,11 @@
 int main() {
 	WindowManager window(1280, 720, "Window");
 
+	RenderQueue renderQueue;
+
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
+
+	renderQueue.add(std::move(sponza));
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
@@ -83,9 +88,7 @@ int main() {
 		//light1.setPosition(camera.getPosition() - light1.getDirection() * 30.0f);
 		light1.use();
 		Material::setOverrideMaterial(shadowMat);
-		for (auto& mesh : sponza) {
-			mesh.draw();
-		}
+		renderQueue.render();
 		Material::setOverrideMaterial(nullptr);
 		
 		// player camera
@@ -95,9 +98,7 @@ int main() {
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
 		camera.use();
-		for (auto& mesh : sponza) {
-			mesh.draw();
-		}		
+		renderQueue.render();
 
 		// deferred shading
 		defferedFramebuffer.bind();

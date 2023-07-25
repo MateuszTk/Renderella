@@ -6,9 +6,9 @@ in vec2 TexCoords;
 in vec3 FragPos;
 in vec3 CameraRay;
 
-// color: xyz, shininess: w
+// color: xyzw
 uniform sampler2D screenTexture0;
-// specular: w
+// shininess: x, specular: y
 uniform sampler2D screenTexture1;
 //normal: xyz
 uniform sampler2D screenTexture2;
@@ -131,7 +131,7 @@ vec4 ssr(vec3 worldPixelPos){
 	vec3 VSNormal = normalize(vec3(view * vec4(texture(screenTexture2, TexCoords).rgb * 2.0 - 1.0, 0.0)));
 
 	float seed = FragPos.x + FragPos.y * 3.43121412313 + fract(1.12345314312 * float(frameCounter));
-	float roughness = 1.0 - texture(screenTexture0, TexCoords).a;
+	float roughness = 1.0 - texture(screenTexture1, TexCoords).r;
 	roughness *= roughness;
 	vec3 jitter = (hash3(seed) * 2.0 - 1.0) * roughness * 0.5;
 	vec3 reflectionDir = normalize(reflect(normalize(VSPostion), VSNormal) + jitter);
@@ -167,9 +167,9 @@ void main() {
 	if (depthValue < 1.0) {
 		vec3 worldPixelPos = worldFragmentPos(FragPos, viewDir, depthValue);
 
-		vec4 lightData = texture(screenTexture1, TexCoords);
+		float specular = texture(screenTexture1, TexCoords).g;
 		
-		if (lightData.w >= SPECULARITY_THRESHOLD) {
+		if (specular >= SPECULARITY_THRESHOLD) {
 			vec4 ssrUV = ssr(worldPixelPos);
 			vec4 ssrColor = vec4(texture(prevFrame, ssrUV.xy).xyz, ssrUV.w);
 			

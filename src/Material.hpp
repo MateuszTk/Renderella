@@ -9,6 +9,11 @@
 
 class Material {
 public:
+	enum class BlendMode {
+		ALPHA_CLIP,
+		ALPHA_BLEND
+	};
+
 	Material(const std::shared_ptr<ShaderProgram>& shaderProgram, const std::string& name = "")
 		: shaderProgram(shaderProgram), name(name) {
 		lightPosLoc = UniLocation("lightPos", shaderProgram);
@@ -27,7 +32,8 @@ public:
 		includeCameraUniform(other.includeCameraUniform), includeFrameCounterUniform(other.includeFrameCounterUniform),
 		lightPosLoc(other.lightPosLoc), lightColorLoc(other.lightColorLoc), 
 		lightDirLoc(other.lightDirLoc), lightSpaceMatrixLoc(other.lightSpaceMatrixLoc),
-		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc), frameCounterLoc(other.frameCounterLoc) {
+		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc), frameCounterLoc(other.frameCounterLoc),
+		blendMode(other.blendMode) {
 
 	}
 
@@ -147,6 +153,14 @@ public:
 		return includeFrameCounterUniform;
 	}
 
+	void setBlendMode(BlendMode blendMode) {
+		this->blendMode = blendMode;
+	}
+
+	BlendMode getBlendMode() const {
+		return blendMode;
+	}
+
 	void use() {
 		if (overrideMaterial != nullptr && overrideMaterial.get() != this) {
 			overrideMaterial->use();
@@ -204,6 +218,7 @@ protected:
 	std::unordered_map<UniLocation, float> floats;
 	std::unordered_map<UniLocation, glm::mat4> mat4s;
 	std::string name;
+	BlendMode blendMode = BlendMode::ALPHA_CLIP;
 	bool includeLightsUniforms = false;
 	bool includeCameraUniform = false;
 	bool includeFrameCounterUniform = false;

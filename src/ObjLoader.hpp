@@ -10,6 +10,8 @@
 #include "Material.hpp"
 #include "PhongMat.hpp"
 #include "Texture.hpp"
+#include "TextureData.hpp"
+#include <list>
 #include <memory>
 #include <map>
 
@@ -149,6 +151,13 @@ public:
 							materials->at(currentMaterialName).setShininessMap(texture);
 						}
 					}
+					else if (option == "illum ") {
+						int illum = std::stoi(line.substr(6));
+						if (illum == 4 || illum == 6 || illum == 7 || illum == 9) {
+							// transparency mode
+							materials->at(currentMaterialName).setBlendMode(Material::BlendMode::ALPHA_BLEND);
+						}
+					}
 				}
 			}
 			if (diffuseMap != nullptr) {
@@ -161,8 +170,8 @@ public:
 	}
 	
 	// path: path to obj file; material: material template for creating new materials
-	static std::vector<Mesh> load(const std::string& path) {
-		std::vector<Mesh> meshes;
+	static std::list<Mesh> load(const std::string& path) {
+		std::list<Mesh> meshes;
 		std::vector<Vertex> vertices;
 		std::vector<int> verticesDuplicatesLinkedList;
 		std::vector<glm::vec2> textureCoords;

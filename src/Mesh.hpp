@@ -103,21 +103,23 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void draw() {
+	void draw(bool drawAll = true, Material::BlendMode blendModeOnly = Material::BlendMode::ALPHA_CLIP) {
 		glBindVertexArray(VAO);
 
 		glm::mat4 finalTransformationMatrix = Camera::getActiveCamera()->getCameraMatrix() * model;
 
-		for (auto& submesh : this->submeshes) {			
-			submesh.material.setMat4("transformations", finalTransformationMatrix);
-			submesh.material.setMat4("model", model);
-			submesh.material.setMat4("projectionView", Camera::getActiveCamera()->getCameraMatrix());
-			submesh.material.setMat4("view", Camera::getActiveCamera()->getViewMatrix());
-			submesh.material.setMat4("projection", Camera::getActiveCamera()->getProjectionMatrix());
-			submesh.material.use();
+		for (auto& submesh : this->submeshes) {
+			if (drawAll || submesh.material.getBlendMode() == blendModeOnly) {
+				submesh.material.setMat4("transformations", finalTransformationMatrix);
+				submesh.material.setMat4("model", model);
+				submesh.material.setMat4("projectionView", Camera::getActiveCamera()->getCameraMatrix());
+				submesh.material.setMat4("view", Camera::getActiveCamera()->getViewMatrix());
+				submesh.material.setMat4("projection", Camera::getActiveCamera()->getProjectionMatrix());
+				submesh.material.use();
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
-			glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
+				glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
+			}
 		}
 
 		glBindVertexArray(0);

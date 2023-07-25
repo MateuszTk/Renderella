@@ -19,15 +19,15 @@ uniform sampler2D shininessMap;
 
 void main() {
 	vec4 objectColor = texture(diffuseMap, TexCoord);
-	if (objectColor.a < 0.5) {
+	if (objectColor.a < 0.01) {
 		discard;
 	}
 
 	vec3 norm = texture(normalMap, TexCoord).rgb * 2.0 - 1.0;
 	norm = normalize(TBN * norm);
 
-	FragColor = vec4(objectColor.rgb * diffuse, texture(shininessMap, TexCoord).r * clamp(shininess / 1000.0, 0.0, 1.0));
+	FragColor = vec4(objectColor.rgb * diffuse, objectColor.a);
 	vec3 specularTexColor = texture(specularMap, TexCoord).rgb;
-	FragLight = vec4(0.0, 0.0, 0.0, max(specularTexColor.r, max(specularTexColor.g, specularTexColor.b)) * specular.r);
-	FragNormal = vec4(norm * 0.5 + 0.5, 1.0f);
+	FragLight = vec4(texture(shininessMap, TexCoord).r * clamp(shininess / 1000.0, 0.0, 1.0), max(specularTexColor.r, max(specularTexColor.g, specularTexColor.b)) * specular.r, 0.0, objectColor.a < 0.99 ? 0.0 : 1.0);
+	FragNormal = vec4(norm * 0.5 + 0.5, objectColor.a < 0.99 ? 0.0 : 1.0);
 }
