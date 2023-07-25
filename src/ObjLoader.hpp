@@ -121,10 +121,29 @@ public:
 							materials->at(currentMaterialName).setSpecularMap(texture);
 						}
 					}
+					else if (option == "map_Pm") {
+						// TODO: should be metalness map
+						std::string texturePath = directry + line.substr(7);
+						auto texture = std::make_shared<Texture>(texturePath);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).setSpecularMap(texture);
+						}
+					}
 					else if (option == "map_Ns") {
 						std::string texturePath = directry + line.substr(7);
 						TextureData textureData(texturePath);
 						textureData.optimizeAlphaOnly();
+						auto texture = std::make_shared<Texture>(textureData);
+						if (texture->getNrChannels() != 0) {
+							materials->at(currentMaterialName).setShininessMap(texture);
+						}
+					}
+					else if (option == "map_Pr") {
+						// roughness map
+						std::string texturePath = directry + line.substr(7);
+						TextureData textureData(texturePath);
+						textureData.optimizeAlphaOnly();
+						textureData.invert();
 						auto texture = std::make_shared<Texture>(textureData);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setShininessMap(texture);

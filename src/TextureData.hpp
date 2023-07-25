@@ -101,6 +101,14 @@ public:
 		}
 	}
 
+	void invert() {
+		const int dataSize = this->width * this->height * this->channels;
+		for (int i = 0; i < dataSize; i++) {
+			unsigned char roughness = this->data[i];
+			this->data[i] = 255 - roughness;
+		}
+	}
+
 	~TextureData() {
 		if (this->data != nullptr) {
 			free(this->data);
