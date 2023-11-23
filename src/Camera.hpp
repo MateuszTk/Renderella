@@ -141,6 +141,8 @@ protected:
 	float speed = 4.0f;
 	float sensitivity = 0.1f;
 
+	bool isLight = false;
+
 	//variables for mouse and keyboard input
 	glm::vec2 lastCursorPos = glm::vec2(0.0f);
 	glm::vec2 angle = glm::vec2(0.0f);
@@ -200,7 +202,19 @@ protected:
 	void updateMatrix() {
 		direction = glm::normalize(direction);
 		if (this->projType == ProjectionType::ORTHOGRAPHIC) {
-			viewMatrix = glm::lookAt(position, position + direction, cameraUp);
+			glm::vec3 roundedPosition = position;
+			if (isLight) {
+				// round position in view space to avoid jittering
+				glm::mat4 cameraCoordSpace = glm::lookAt(glm::vec3(0, 0, 0), direction, cameraUp);
+				glm::vec4 pos = cameraCoordSpace * glm::vec4(position, 1.0f);
+				float scale = 256.0f / this->fov;
+				pos.x = round(pos.x * scale) / scale;
+				pos.y = round(pos.y * scale) / scale;
+				roundedPosition = glm::inverse(cameraCoordSpace) * pos;
+			}
+
+			// final camera matrix
+			viewMatrix = glm::lookAt(roundedPosition, roundedPosition + direction, cameraUp);
 			projectionMatrix = glm::ortho(-this->fov, this->fov, -this->fov, this->fov, this->nearPlane, this->farPlane);
 			this->cameraMatrix = projectionMatrix * viewMatrix;
 		}

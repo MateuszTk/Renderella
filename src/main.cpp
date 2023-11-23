@@ -1,6 +1,6 @@
 
-//#define ENABLE_TEXTURE_CACHE
-//#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+#define ENABLE_TEXTURE_CACHE
+#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
 
 #include "WindowManager.hpp"
 #include "Shader.hpp"
@@ -34,7 +34,7 @@ int main() {
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);	
 	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f), glm::vec3(0.8f, -2.2f, 0.4f));
-	light1.setFov(50.0f);
+	light1.setFov(40.0f);
 
 	Framebuffer lightFramebuffer(4096, 4096, 0, false, true);
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
@@ -85,7 +85,10 @@ int main() {
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT);
-		//light1.setPosition(camera.getPosition() - light1.getDirection() * 30.0f);
+
+		glm::vec3 newLightPos = camera.getPosition() - light1.getDirection() * 30.0f;
+		light1.setPosition(newLightPos);
+
 		light1.use();
 		Material::setOverrideMaterial(shadowMat);
 		renderQueue.render();

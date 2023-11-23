@@ -15,6 +15,7 @@ public:
 
 	Light(Type type, const glm::vec3& pos, const glm::vec3& color, const glm::vec3& direction = glm::vec3(0.0f), float intensity = 1.0f) 
 		: type(type), color(color), intensity(intensity), Camera(ProjectionType::ORTHOGRAPHIC, 1.0f, false, pos, direction, 20.0f, 80.0f, 0.1f) {
+		this->isLight = true;
 		if (usedLights >= maxLights) {
 			std::cout << "Maximum number of lights reached\n";
 		}
