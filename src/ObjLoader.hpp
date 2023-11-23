@@ -392,7 +392,8 @@ public:
 						}
 
 						if (!found || currentSubMesh->material.getName().length() == 0) {
-							if (!found) {
+							// if submesh with desired material not found and current submesh is not empty; else reuse current submesh by applying new material
+							if (!found && (currentSubMesh->elements.size() != 0)) {
 								// create new submesh
 								subMeshes.push_back(SubMesh());
 								currentSubMesh = &(subMeshes.back());

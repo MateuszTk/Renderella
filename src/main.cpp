@@ -22,7 +22,7 @@
 #include "stb_image.h"
 
 int main() {
-	WindowManager window(1280, 720, "Window");
+	WindowManager window(1280, 720, "Renderella");
 
 	RenderQueue renderQueue;
 
