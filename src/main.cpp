@@ -1,6 +1,6 @@
 
-#define ENABLE_TEXTURE_CACHE
-#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+//#define ENABLE_TEXTURE_CACHE
+//#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
 
 #include "WindowManager.hpp"
 #include "Shader.hpp"
