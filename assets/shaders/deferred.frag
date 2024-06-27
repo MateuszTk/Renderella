@@ -37,7 +37,7 @@ uniform vec2 nearFar;
 
 #define LIGHT_SIZE_UV 12.0
 #define BIAS 0.00025
-#define NORMAL_BIAS 0.013
+#define NORMAL_BIAS (0.026*2.0)
 
 float linearizeDepth(float d, float zNear, float zFar) {
     float ndc = 2.0 * d - 1.0;

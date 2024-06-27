@@ -10,10 +10,18 @@ public:
 		setSpecular(glm::vec3(0.5f));
 		setShininess(1000.0f);
 		setDiffuse(glm::vec3(1.0f, 1.0f, 1.0f));
-		setDiffuseMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-		setNormalMap(Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f)));
-		setSpecularMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-		setShininessMap(Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+
+		if (defaultDiffuseMap == nullptr) {
+			defaultDiffuseMap = Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			defaultNormalMap = Texture::createColorTexture(2, 2, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
+			defaultSpecularMap = Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			defaultShininessMap = Texture::createColorTexture(2, 2, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		}
+
+		setDiffuseMap(defaultDiffuseMap);
+		setNormalMap(defaultNormalMap);
+		setSpecularMap(defaultSpecularMap);
+		setShininessMap(defaultShininessMap);
 	}
 
 	PhongMat(const PhongMat& other)
@@ -64,4 +72,9 @@ private:
 	void setAmbient(const glm::vec3& ambient) {
 		setVec3("ambient", ambient);
 	}
+
+	static std::shared_ptr<Texture> defaultDiffuseMap;
+	static std::shared_ptr<Texture> defaultNormalMap;
+	static std::shared_ptr<Texture> defaultSpecularMap;
+	static std::shared_ptr<Texture> defaultShininessMap;
 };

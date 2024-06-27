@@ -31,7 +31,7 @@ int main() {
 
 	renderQueue.add(std::move(sponza));
 
-	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
+	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 70.0f, 100.0f, 0.2f);
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), 0.5f);	
 	DirectionalLight sun(glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f, -2.2f, 0.4f), glm::vec3(0.8f));

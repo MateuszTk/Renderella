@@ -14,6 +14,7 @@
 #include <list>
 #include <memory>
 #include <map>
+#include "TextureLoader.hpp"
 
 class ObjLoader {
 public:
@@ -35,6 +36,10 @@ public:
 			std::string line;
 			std::unique_ptr<TextureData> diffuseMap = nullptr;
 
+			TextureLoader textureLoader;
+
+			std::cout << "[mtl] Loading mtl file: " << path << "\n";
+
 			while (std::getline(file, line)) {
 				// Remove leading whitespace
 				int offset = 0;
@@ -48,7 +53,7 @@ public:
 					
 					// add previous albedo map
 					if (diffuseMap != nullptr) {
-						auto texture = std::make_shared<Texture>(*diffuseMap);
+						auto texture = textureLoader.create(*diffuseMap, "dM_" + diffuseMap->getPath());
 						materials->at(currentMaterialName).setDiffuseMap(texture);
 						diffuseMap = nullptr;
 					}
@@ -81,8 +86,8 @@ public:
 				else {
 					auto option = line.substr(0, 6);
 					if (option == "map_Kd") {
-						std::string texturePath = directry + line.substr(7);
-						diffuseMap = std::make_unique<TextureData>(texturePath);
+						std::string diffuseMapPath = directry + line.substr(7);
+						diffuseMap = std::make_unique<TextureData>(diffuseMapPath);
 					}
 					else if (option == "map_Bu" || option == "map_bu") {
 						std::string name = line.substr(9);
@@ -91,7 +96,7 @@ public:
 						}
 						std::string texturePath = directry + name;
 
-						auto texture = std::make_shared<Texture>(texturePath);
+						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setNormalMap(texture);
 						}
@@ -109,7 +114,7 @@ public:
 						std::string texturePath = directry + line.substr(7);
 						TextureData textureData(texturePath);
 						textureData.optimizeAlphaOnly();
-						auto texture = std::make_shared<Texture>(textureData);
+						auto texture = textureLoader.create(textureData, "Ks_" + texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setSpecularMap(texture);
 						}
@@ -118,7 +123,7 @@ public:
 						// map_refl
 						// TODO: should be metalness map
 						std::string texturePath = directry + line.substr(9);
-						auto texture = std::make_shared<Texture>(texturePath);
+						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setSpecularMap(texture);
 						}
@@ -126,7 +131,7 @@ public:
 					else if (option == "map_Pm") {
 						// TODO: should be metalness map
 						std::string texturePath = directry + line.substr(7);
-						auto texture = std::make_shared<Texture>(texturePath);
+						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setSpecularMap(texture);
 						}
@@ -135,7 +140,7 @@ public:
 						std::string texturePath = directry + line.substr(7);
 						TextureData textureData(texturePath);
 						textureData.optimizeAlphaOnly();
-						auto texture = std::make_shared<Texture>(textureData);
+						auto texture = textureLoader.create(textureData, "Ns_" + texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setShininessMap(texture);
 						}
@@ -146,7 +151,7 @@ public:
 						TextureData textureData(texturePath);
 						textureData.optimizeAlphaOnly();
 						textureData.invert();
-						auto texture = std::make_shared<Texture>(textureData);
+						auto texture = textureLoader.create(textureData, "Pr_" + texturePath);
 						if (texture->getNrChannels() != 0) {
 							materials->at(currentMaterialName).setShininessMap(texture);
 						}
@@ -161,7 +166,7 @@ public:
 				}
 			}
 			if (diffuseMap != nullptr) {
-				auto texture = std::make_shared<Texture>(*diffuseMap);
+				auto texture = textureLoader.create(*diffuseMap, "dM_" + diffuseMap->getPath());
 				materials->at(currentMaterialName).setDiffuseMap(texture);
 			}
 		}
