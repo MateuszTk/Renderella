@@ -9,7 +9,7 @@ out vec3 FragPos;
 out vec2 TexCoord;
 out mat3 TBN;
 
-uniform mat4 transformations;
+uniform mat4 projectionView;
 uniform mat4 model;
 
 void main() {
@@ -23,5 +23,6 @@ void main() {
 	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
 	TBN = mat3(T, B, N);
 
-	gl_Position = transformations * vec4(aPos, 1.0);	
+	gl_Position = projectionView * model * vec4(aPos, 1.0);
+	//gl_Position = transformations * vec4(aPos, 1.0);	
 }

@@ -18,15 +18,15 @@ uniform sampler2D screenTexture2;
 // depth
 uniform sampler2D depthTexture;
 // light depth
-uniform sampler2DShadow lightDepthShadowSampler;
-uniform sampler2D lightDepth;
+uniform sampler2DArrayShadow lightDepthShadowSampler;
+uniform sampler2DArray lightDepth;
 
 uniform sampler2D sky;
 
-uniform vec4 lightPos[8];
-uniform vec3 lightColor[8];
-uniform vec3 lightDir[8];
-uniform mat4 lightSpaceMatrix[8];
+uniform vec4 lightPos[2];
+uniform vec3 lightColor[2];
+uniform vec3 lightDir[2];
+uniform mat4 lightSpaceMatrices[2 * 4];
 uniform int usedLights;
 uniform vec3 viewPos;
 uniform vec3 viewDir;
@@ -37,7 +37,7 @@ uniform vec2 nearFar;
 
 #define LIGHT_SIZE_UV 12.0
 #define BIAS 0.00025
-#define NORMAL_BIAS 0.026
+#define NORMAL_BIAS 0.013
 
 float linearizeDepth(float d, float zNear, float zFar) {
     float ndc = 2.0 * d - 1.0;
@@ -55,7 +55,11 @@ float penumbraSize(float zReceiver, float zBlocker) {
 	return (zReceiver - zBlocker) / zBlocker;
 }
 
-vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize) {
+float uvToCascadeId(vec2 uv) {
+	return floor(log2(max(uv.x, uv.y) * 0.5) + 1.0);
+}
+
+vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize, float cascade) {
 	float blockerDistance = 0.0;
 	float numBlockers = 0.0;
 
@@ -67,7 +71,11 @@ vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize) {
 		for (int sampleN = 0; sampleN < sampleCount; sampleN++) {
 			float angle = float(sampleN) / float(sampleCount) * 2.0 * PI;
 			vec2 offset = vec2(cos(angle), sin(angle)) * texelSize * searchWidth;
-			float texelDepth = textureLod(lightDepth, projCoords.xy + offset, 0.0).r;
+
+			//float cascade = uvToCascadeId(projCoords.xy + offset);
+			vec2 uv = projCoords.xy + offset;
+			//uv /= pow(2.0, cascade);
+			float texelDepth = textureLod(lightDepth, vec3(uv, cascade), 0.0).r;
 			if (texelDepth < projCoords.z + BIAS) {
 				blockerDistance += texelDepth;
 				numBlockers += 1.0;
@@ -82,7 +90,7 @@ vec2 PCSS_BlockerDistance(vec3 projCoords, vec2 texelSize) {
 	return vec2(blockerDistance, numBlockers);
 }
 
-float PCF_filter(vec3 projCoords, vec2 texelSize, float uvRadius) {
+float PCF_filter(vec3 projCoords, vec2 texelSize, float uvRadius, float cascade) {
 	float sum = 0.0;
 	int sampleCount = 16;
 	int numRings = 2;
@@ -90,23 +98,45 @@ float PCF_filter(vec3 projCoords, vec2 texelSize, float uvRadius) {
 		for (int sampleN = 0; sampleN < sampleCount; sampleN++) {
 			float angle = float(sampleN) / float(sampleCount) * 2.0 * PI;
 			vec2 offset = uvRadius * vec2(cos(angle), sin(angle)) * texelSize;
-			sum += texture(lightDepthShadowSampler, vec3(projCoords.xy + offset, projCoords.z + BIAS));
+
+			//float cascade = uvToCascadeId(projCoords.xy + offset);
+			vec2 uv = projCoords.xy + offset;
+			//uv /= pow(2.0, cascade);
+			sum += texture(lightDepthShadowSampler, vec4(uv, cascade, projCoords.z + BIAS));
 		}
 		uvRadius /= 2.0;
 	}
 	return sum / float(sampleCount * numRings);
 }
 
-float directionalShadow(mat4 lightSpaceMatrix, vec3 normal, vec3 worldPixelPos) {
+
+float directionalShadow(int lightSpaceMatrixIndex, vec3 normal, vec3 worldPixelPos) {
 	worldPixelPos += normal * NORMAL_BIAS;
-	vec4 lightSpacePos = lightSpaceMatrix * vec4(worldPixelPos, 1.0);
-	vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-	projCoords = projCoords * 0.5 + 0.5;
+	
+	int cascade = 0;
+
+	mat4 lightSpaceMatrix = lightSpaceMatrices[4 * lightSpaceMatrixIndex + cascade];
+	vec3 projCoords;
+	const float margin = 0.01;
+
+	while (cascade < 4) {
+		vec4 lightSpacePos = lightSpaceMatrix * vec4(worldPixelPos, 1.0);
+		projCoords = lightSpacePos.xyz / lightSpacePos.w;
+		projCoords = projCoords * 0.5 + 0.5;
+
+		if (projCoords.x >= margin && projCoords.x <= 1.0 - margin && projCoords.y >= margin && projCoords.y <= 1.0 - margin) {
+			break;
+		}
+		cascade++;
+		lightSpaceMatrix = lightSpaceMatrices[4 * lightSpaceMatrixIndex + cascade];
+	}
 	
 	float currentDepth = projCoords.z;
 
-	vec2 texelSize = 1.0 / textureSize(lightDepth, 0);
-	vec2 blockerDepth = PCSS_BlockerDistance(projCoords, texelSize);
+	//uvToCascadeId(projCoords.xy);
+
+	vec2 texelSize = 1.0 / textureSize(lightDepth, 0).xy;
+	vec2 blockerDepth = PCSS_BlockerDistance(projCoords, texelSize, cascade);
 
 	if (blockerDepth.y <= 0.0) {
 		return 0.0;
@@ -114,7 +144,7 @@ float directionalShadow(mat4 lightSpaceMatrix, vec3 normal, vec3 worldPixelPos) 
 
 	float penumbra = LIGHT_SIZE_UV * penumbraSize(currentDepth, blockerDepth.x) + 0.5;
 
-	return 1.0 - PCF_filter(projCoords, texelSize, penumbra);
+	return 1.0 - PCF_filter(projCoords, texelSize, penumbra, cascade);
 }
 
 vec3 getSkyColor(vec3 rayDir, float roughness) {
@@ -160,7 +190,7 @@ void main() {
 			if (lightType == 1) {
 				// Directional light
 				diffuseF *= 0.28;
-				diffuseF += lightColor[i] * (1.0 - directionalShadow(lightSpaceMatrix[i], normal, worldPixelPos));
+				diffuseF += lightColor[i] * (1.0 - directionalShadow(i, normal, worldPixelPos));
 			}
 			else if (lightType == 0) {
 				// Point light

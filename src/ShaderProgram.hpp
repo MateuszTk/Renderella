@@ -30,6 +30,24 @@ public:
 		}
 	}
 
+	ShaderProgram(const Shader<GL_VERTEX_SHADER>& vertexShader, const Shader<GL_FRAGMENT_SHADER>& fragmentShader, const Shader<GL_GEOMETRY_SHADER>& geometryShader) {
+		this->master = true;
+		this->id = glCreateProgram();
+		glAttachShader(this->id, vertexShader.getId());
+		glAttachShader(this->id, fragmentShader.getId());
+		glAttachShader(this->id, geometryShader.getId());
+		glLinkProgram(this->id);
+
+		int success;
+		char infoLog[512];
+		glGetProgramiv(this->id, GL_LINK_STATUS, &success);
+
+		if (!success) {
+			glGetProgramInfoLog(this->id, 512, NULL, infoLog);
+			std::cout << "Error linking shader program\n" << infoLog << '\n';
+		}
+	}
+
 	ShaderProgram(ShaderProgram&& other) {
 		this->id = other.id;
 		this->master = true;

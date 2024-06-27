@@ -20,6 +20,7 @@ public:
 		this->width = textureData.getWidth();
 		this->height = textureData.getHeight();
 		this->nrChannels = textureData.getChannels();
+		this->layers = 1;
 
 		if (textureData.getData() != nullptr) {
 			if (nrChannels == 3) {
@@ -52,21 +53,35 @@ public:
 	}
 
 
-	Texture(int width, int height, GLint internalFormat = GL_RGBA, const GLvoid* data = NULL) : width(width), height(height), nrChannels(4) {
+	Texture(int width, int height, GLint internalFormat = GL_RGBA, const GLvoid* data = NULL, int layers = 1, bool init = true) : width(width), height(height), layers(layers), nrChannels(4) {
 		this->master = true;
 		glGenTextures(1, &this->texture);
-		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		if (init) {
+			if (layers > 1) {
+				glBindTexture(GL_TEXTURE_2D_ARRAY, this->texture);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, width, height, layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+			}
+			else {
+				glBindTexture(GL_TEXTURE_2D, this->texture);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+				glBindTexture(GL_TEXTURE_2D, 0);
+			}
+		}
 	}
 
 	Texture() {
 		this->width = 0;
 		this->height = 0;
+		this->layers = 0;
 		this->nrChannels = 0;
 		this->master = true;
 		glGenTextures(1, &this->texture);
@@ -75,6 +90,7 @@ public:
 	Texture(Texture&& other) {
 		this->width = other.width;
 		this->height = other.height;
+		this->layers = other.layers;
 		this->nrChannels = other.nrChannels;
 		this->texture = other.texture;
 		this->master = true;
@@ -99,11 +115,21 @@ public:
 	}
 
 	void bind() const {
-		glBindTexture(GL_TEXTURE_2D, this->texture);
+		if (this->layers > 1) {
+			glBindTexture(GL_TEXTURE_2D_ARRAY, this->texture);
+		}
+		else {
+			glBindTexture(GL_TEXTURE_2D, this->texture);
+		}
 	}
 
 	void unbind() const {
-		glBindTexture(GL_TEXTURE_2D, 0);
+		if (this->layers > 1) {
+			glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		}
+		else {
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 	}
 
 	int getWidth() const {
@@ -112,6 +138,10 @@ public:
 
 	int getHeight() const {
 		return this->height;
+	}
+
+	int getLayers() const {
+		return this->layers;
 	}
 
 	int getNrChannels() const {
@@ -129,5 +159,6 @@ private:
 	bool master;
 	int width;
 	int height;
+	int layers;
 	int nrChannels;
 };

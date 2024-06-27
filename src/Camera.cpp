@@ -1,3 +1,3 @@
 #include "Camera.hpp"
 
-Camera* Camera::activeCamera = nullptr;
+std::vector<Camera*> Camera::activeCameras = std::vector<Camera*>();

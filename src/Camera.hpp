@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "WindowManager.hpp"
+#include <vector>
 
 class Camera {
 public:
@@ -51,8 +52,11 @@ public:
 		updateMatrix();
 	}
 
-	virtual void use() {
-		activeCamera = this;
+	virtual void use(bool multiLayer = false) {
+		if (!multiLayer) {
+			activeCameras.clear();
+		}
+		activeCameras.push_back(this);
 	}
 
 	const glm::mat4& getCameraMatrix() {
@@ -68,7 +72,11 @@ public:
 	}
 
 	static Camera* getActiveCamera() {
-		return activeCamera;
+		return (activeCameras.size() > 0) ? activeCameras[0] : nullptr;
+	}
+
+	static std::vector<Camera*> getActiveCameras() {
+		return activeCameras;
 	}
 
 	void setFov(float fov) {
@@ -117,9 +125,17 @@ public:
 		this->controllable = controllable;
 	}
 
+	bool getIsLight() const {
+		return this->isLight;
+	}
+
+	void setIsLight(bool isLight) {
+		this->isLight = isLight;
+	}
+
 	~Camera() {
-		if (activeCamera == this) {
-			activeCamera = nullptr;
+		if (std::find(activeCameras.begin(), activeCameras.end(), this) != activeCameras.end()) {
+			activeCameras.erase(std::find(activeCameras.begin(), activeCameras.end(), this));
 		}
 	}
 
@@ -128,7 +144,7 @@ protected:
 	glm::mat4 cameraMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
-	static Camera* activeCamera;
+	static std::vector<Camera*> activeCameras;
 	glm::vec3 direction;
 	ProjectionType projType;
 

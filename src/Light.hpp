@@ -6,26 +6,20 @@
 #include <glm/glm.hpp>
 #include "Camera.hpp"
 
-class Light : public Camera {
+class Light {
 public:
 	enum class Type {
 		POINT = 0,
 		DIRECTIONAL = 1
 	};
 
-	Light(Type type, const glm::vec3& pos, const glm::vec3& color, const glm::vec3& direction = glm::vec3(0.0f), float intensity = 1.0f) 
-		: type(type), color(color), intensity(intensity), Camera(ProjectionType::ORTHOGRAPHIC, 1.0f, false, pos, direction, 20.0f, 80.0f, 0.1f) {
-		this->isLight = true;
+	Light(Type type, const glm::vec3& pos, const glm::vec3& color, float intensity = 1.0f) 
+		: type(type), color(color), intensity(intensity), position(pos) {
 		if (usedLights >= maxLights) {
 			std::cout << "Maximum number of lights reached\n";
 		}
 		else {
-			lights[usedLights] = this;
-			lightPositions[usedLights] = glm::vec4(pos, (int)type);
-			lightColors[usedLights] = color * intensity;
-			lightDirections[usedLights] = direction;
-			this->updateMatrix();
-			lightSpaceMatrices[usedLights] = this->getCameraMatrix();
+			lights[usedLights] = this;		
 			usedLights++;
 		}
 	}
@@ -42,7 +36,9 @@ public:
 				lightPositions[index] = lightPositions[usedLights - 1];
 				lightColors[index] = lightColors[usedLights - 1];
 				lightDirections[index] = lightDirections[usedLights - 1];
-				lightSpaceMatrices[index] = lightSpaceMatrices[usedLights - 1];
+				for (int i = 0; i < 4; i++) {// TODO: use variable from DirectionalLight
+					lightSpaceMatrices[index * 4 + i] = lightSpaceMatrices[(usedLights - 1) * 4 + i];
+				}
 				usedLights--;
 			}
 		}
@@ -51,12 +47,7 @@ public:
 		}
 	}
 
-	void use() override {
-		updateLists();
-		Camera::use();
-	}
-
-	const glm::vec3& getColor() const {
+	const glm::vec3 getColor() const {
 		return color;
 	}
 
@@ -71,6 +62,15 @@ public:
 
 	void setIntensity(float intensity) {
 		this->intensity = intensity;
+		updateLists();
+	}
+
+	const glm::vec3 getPosition() const {
+		return position;
+	}
+
+	void setPosition(const glm::vec3& position) {
+		this->position = position;
 		updateLists();
 	}
 
@@ -111,11 +111,12 @@ public:
 		return maxLights;
 	}
 
-private:
+protected:
+	glm::vec3 position;
 	glm::vec3 color;
 	Type type;
 	float intensity;
-	const static int maxLights = 8;
+	const static int maxLights = 2;
 	static int usedLights;
 	static Light* lights[maxLights];
 
@@ -126,9 +127,9 @@ private:
 
 	static glm::vec3 lightDirections[maxLights];
 
-	static glm::mat4 lightSpaceMatrices[maxLights];
+	static glm::mat4 lightSpaceMatrices[maxLights * 4]; // todo: use variable from DirectionalLight
 
-	void updateLists() {
+	virtual void updateLists() {
 		int index = 0;
 		while (index < usedLights && lights[index] != this) {
 			index++;
@@ -136,9 +137,6 @@ private:
 		if (index < usedLights) {
 			lightPositions[index] = glm::vec4(position, (float)type);
 			lightColors[index] = color * intensity;
-			lightDirections[index] = direction;
-			this->updateMatrix();
-			lightSpaceMatrices[index] = this->cameraMatrix;
 		}
 	}
 };

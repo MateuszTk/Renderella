@@ -14,6 +14,7 @@
 #include "Camera.hpp"
 #include "PhongMat.hpp"
 #include "Light.hpp"
+#include "DirectionalLight.hpp"
 #include "Framebuffer.hpp"
 #include "Primitives.hpp"
 #include "RenderQueue.hpp"
@@ -32,11 +33,10 @@ int main() {
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
-	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f), 0.5f);	
-	Light light1(Light::Type::DIRECTIONAL, glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f), glm::vec3(0.8f, -2.2f, 0.4f));
-	light1.setFov(40.0f);
+	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), 0.5f);	
+	DirectionalLight sun(glm::vec3(0.0f, 18.0f, 0.0f), glm::vec3(0.8f, -2.2f, 0.4f), glm::vec3(0.8f));
 
-	Framebuffer lightFramebuffer(4096, 4096, 0, false, true);
+	Framebuffer lightFramebuffer(1024, 1024, 0, false, true, DirectionalLight::cascadeCount);
 	Framebuffer mainFramebuffer(window.getWidth(), window.getHeight(), 3);
 	Framebuffer defferedFramebuffer(window.getWidth(), window.getHeight(), 2);
 	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1);
@@ -67,7 +67,8 @@ int main() {
 
 	Shader<GL_VERTEX_SHADER> shadowVertexShader("assets/shaders/shadow.vert", true);
 	Shader<GL_FRAGMENT_SHADER> shadowFragmentShader("assets/shaders/shadow.frag", true);
-	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader);
+	Shader<GL_GEOMETRY_SHADER> shadowGeometryShader("assets/shaders/shadow.geom", true);
+	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader, shadowGeometryShader);
 	auto shadowMat = std::make_shared<Material>(shadowProgram);
 
 	glEnable(GL_CULL_FACE);
@@ -78,7 +79,7 @@ int main() {
 		camera.update(window);
 
 		light.setColor(glm::vec3(0.5f + sin(glfwGetTime() * 1.1f), 0.5f + sin(glfwGetTime()), 0.5f + sin(glfwGetTime() * 0.5f)));
-		light.setPosition(glm::vec3(sin(glfwGetTime()) * 4.0f - 2.0f, 2.0f, 0.0f));
+		sun.setPosition(glm::vec3(sin(glfwGetTime()) * 4.0f - 2.0f, 2.0f, 0.0f));
 
 		// directional light
 		lightFramebuffer.bind(true);
@@ -86,17 +87,17 @@ int main() {
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT);
 
-		glm::vec3 newLightPos = camera.getPosition() - light1.getDirection() * 30.0f;
-		light1.setPosition(newLightPos);
+		glm::vec3 newLightPos = camera.getPosition() - sun.getDirection() * 30.0f;
+		sun.setPosition(newLightPos);
 
-		light1.use();
+		sun.use();
 		Material::setOverrideMaterial(shadowMat);
 		renderQueue.render();
 		Material::setOverrideMaterial(nullptr);
 		
 		// player camera
 		mainFramebuffer.bind(true);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);

@@ -23,6 +23,7 @@ void main() {
 	float specular = fragReflection.w;
 
 	float depthValue = texture(depthTexture, TexCoords).r;
+	vec4 color = texture(colorTexture, TexCoords);
 	if (depthValue < 1.0) {
 		// SSR		
 		vec2 ssrTexelSize = 1.0 / vec2(textureSize(ssrTexture, 0));
@@ -37,12 +38,11 @@ void main() {
 		ssrColor /= 9.0;
 
 		// Mix
-		vec3 color = texture(colorTexture, TexCoords).xyz;
 		vec3 mixedReflection = mix(fragReflection.xyz, ssrColor.xyz, ssrColor.w) * specular;
 		
-		FragColor = vec4(color * (fragLight.xyz + mixedReflection), 1.0);
+		FragColor = vec4(color.xyz * (fragLight.xyz + mixedReflection), 1.0);
 	}
 	else{
-		FragColor = vec4(fragReflection.xyz, 1.0);
+		FragColor = vec4(mix(fragReflection.xyz, color.xyz, color.a), 1.0);
 	}	
 }

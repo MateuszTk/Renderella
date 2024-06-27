@@ -19,12 +19,16 @@ public:
 		lightPosLoc = UniLocation("lightPos", shaderProgram);
 		lightColorLoc = UniLocation("lightColor", shaderProgram);
 		lightDirLoc = UniLocation("lightDir", shaderProgram);
-		lightSpaceMatrixLoc = UniLocation("lightSpaceMatrix", shaderProgram);
+		lightSpaceMatrixLoc = UniLocation("lightSpaceMatrices", shaderProgram);
 		usedLightsLoc = UniLocation("usedLights", shaderProgram);
 		viewPosLoc = UniLocation("viewPos", shaderProgram);
 		viewDirLoc = UniLocation("viewDir", shaderProgram);
 		nearFarLoc = UniLocation("nearFar", shaderProgram);
 		frameCounterLoc = UniLocation("frameCounter", shaderProgram);
+
+		UniLocation projectionViewLoc = UniLocation("projectionView", shaderProgram);
+		UniLocation viewLoc = UniLocation("view", shaderProgram);
+		UniLocation projectionLoc = UniLocation("projection", shaderProgram);
 	}
 
 	Material(const Material& other) 
@@ -189,11 +193,25 @@ public:
 		for (auto& mat : mat4s) {
 			shaderProgram->setMat4(mat.first, mat.second);
 		}
+
+		std::vector<glm::mat4> projectionViewMatrices;
+		std::vector<glm::mat4> viewMatrices;
+		std::vector<glm::mat4> projectionMatrices;
+		for (auto& camera : Camera::getActiveCameras()) {
+			projectionViewMatrices.push_back(camera->getCameraMatrix());
+			viewMatrices.push_back(camera->getViewMatrix());
+			projectionMatrices.push_back(camera->getProjectionMatrix());
+		}
+
+		shaderProgram->setMat4s(projectionViewLoc, projectionViewMatrices.data(), projectionViewMatrices.size());
+		shaderProgram->setMat4s(viewLoc, viewMatrices.data(), viewMatrices.size());
+		shaderProgram->setMat4s(projectionLoc, projectionMatrices.data(), projectionMatrices.size());
+
 		if (includeLightsUniforms) {
 			shaderProgram->setVec4s(lightPosLoc, Light::getLightPositions(), Light::getMaxLights());
 			shaderProgram->setVec3s(lightColorLoc, Light::getLightColors(), Light::getMaxLights());
 			shaderProgram->setVec3s(lightDirLoc, Light::getLightDirections(), Light::getMaxLights());
-			shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLights());
+			shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLights() * 4); //TODO
 			shaderProgram->setInt(usedLightsLoc, Light::getUsedLightsCnt());
 		}
 		if (includeCameraUniform) {
@@ -227,12 +245,16 @@ private:
 	UniLocation lightPosLoc = UniLocation("lightPos", shaderProgram);
 	UniLocation lightColorLoc = UniLocation("lightColor", shaderProgram);
 	UniLocation lightDirLoc = UniLocation("lightDir", shaderProgram);
-	UniLocation lightSpaceMatrixLoc = UniLocation("lightSpaceMatrix", shaderProgram);
+	UniLocation lightSpaceMatrixLoc = UniLocation("lightSpaceMatrices", shaderProgram);
 	UniLocation usedLightsLoc = UniLocation("usedLights", shaderProgram);
 	UniLocation viewPosLoc = UniLocation("viewPos", shaderProgram);
 	UniLocation viewDirLoc = UniLocation("viewDir", shaderProgram);
 	UniLocation nearFarLoc = UniLocation("nearFar", shaderProgram);
 	UniLocation frameCounterLoc = UniLocation("frameCounter", shaderProgram);
+
+	UniLocation projectionViewLoc = UniLocation("projectionView", shaderProgram);
+	UniLocation viewLoc = UniLocation("view", shaderProgram);
+	UniLocation projectionLoc = UniLocation("projection", shaderProgram);
 
 	static std::shared_ptr<Material> overrideMaterial;
 };
