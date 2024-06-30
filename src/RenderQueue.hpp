@@ -10,17 +10,21 @@ public:
 	}
 
 	void render() {
+		Material::resetLastMaterial();
 		for (auto& mesh : renderables) {
-			mesh->draw(false, Material::BlendMode::ALPHA_CLIP);
+			mesh->draw(false, Material::BlendMode::ALPHA_CLIP, false, true);
 		}
+		Mesh::unbind();
 
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		Material::resetLastMaterial();
 		for (auto& mesh : renderables) {
-			mesh->draw(false, Material::BlendMode::ALPHA_BLEND);
+			mesh->draw(false, Material::BlendMode::ALPHA_BLEND, false, true);
 		}
+		Mesh::unbind();
 
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);

@@ -1,8 +1,9 @@
 #include "Light.hpp"
 
 int Light::usedLights = 0;
-Light* Light::lights[Light::maxLights];
-glm::vec4 Light::lightPositions[Light::maxLights];
-glm::vec3 Light::lightColors[Light::maxLights];
-glm::vec3 Light::lightDirections[Light::maxLights];
-glm::mat4 Light::lightSpaceMatrices[Light::maxLights * 4]; // TODO
+Light* Light::lights[];
+glm::vec4 Light::lightPositions[];
+glm::vec3 Light::lightColors[];
+glm::vec3 Light::lightDirections[];
+glm::mat4 Light::lightSpaceMatrices[];
+int Light::lightSpaceMatrixCount[] = { 0 };

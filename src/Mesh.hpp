@@ -12,7 +12,7 @@
 
 struct SubMesh {
 public:
-	SubMesh(const std::vector<unsigned int>& elements, const Material& material) : elements(elements), material(material) {
+	SubMesh(const std::vector<unsigned int>& elements, std::shared_ptr<Material> material) : elements(elements), material(material) {
 
 	}
 
@@ -21,7 +21,7 @@ public:
 	}
 
 	std::vector<unsigned int> elements;
-	Material material;
+	std::shared_ptr<Material> material;
 
 	friend class Mesh;
 private:
@@ -103,20 +103,27 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void draw(bool drawAll = true, Material::BlendMode blendModeOnly = Material::BlendMode::ALPHA_CLIP) {
-		glBindVertexArray(VAO);
-
-
+	void draw(bool drawAll = true, Material::BlendMode blendModeOnly = Material::BlendMode::ALPHA_CLIP, bool unbind = true, bool allowResourceReuse = false) {
+		bool firstDraw = true;
 		for (auto& submesh : this->submeshes) {
-			if (drawAll || submesh.material.getBlendMode() == blendModeOnly) {
-				submesh.material.setMat4("model", model);
-				submesh.material.use();
+			if (drawAll || submesh.material->getBlendMode() == blendModeOnly) {
+				if (firstDraw) {
+					firstDraw = false;
+					glBindVertexArray(VAO);
+				}
+				submesh.material->setMat4("model", model);
+				submesh.material->use(allowResourceReuse);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, submesh.EBO);
 				glDrawElements(GL_TRIANGLES, submesh.elements.size(), GL_UNSIGNED_INT, 0);
 			}
 		}
+		if (!firstDraw && unbind) {
+			Mesh::unbind();
+		}
+	}
 
+	static void unbind() {
 		glBindVertexArray(0);
 	}
 

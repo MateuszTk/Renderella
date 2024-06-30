@@ -22,27 +22,21 @@ include_directories(
 	external/stb
 )
 
-file(GLOB_RECURSE SOURCES RELATIVE 
+file(GLOB_RECURSE SOURCES 
 	"${CMAKE_CURRENT_SOURCE_DIR}"
 	"src/*.cpp"
 	"external/glad/src/glad.c"
 )
 
-# Add source to this project's executable.
-add_executable (${PROJECT_NAME}  ${SOURCES})
+set(COMMON_SOURCES ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} glfw)
-target_link_libraries(${PROJECT_NAME} glm)
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
-endif()
-
-# Copy assets to build directory
-add_custom_target(copy_assets ALL
-  COMMENT "Copying assets to build directory"
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${CMAKE_CURRENT_SOURCE_DIR}/assets
-          ${CMAKE_CURRENT_BINARY_DIR}/assets
-  DEPENDS ${PROJECT_NAME}
+set(LIBS
+	glfw
+	glm
 )
+
+set(COMMON_LIBS ${LIBS})
+
+add_subdirectory("demo/sponza")
+add_subdirectory("demo/terrain")
+

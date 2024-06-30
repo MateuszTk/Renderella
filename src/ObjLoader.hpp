@@ -18,13 +18,13 @@
 
 class ObjLoader {
 public:
-	static std::unique_ptr<std::map<std::string, PhongMat>> loadMtl(std::string path) {
+	static std::unique_ptr<std::map<std::string, std::shared_ptr<PhongMat>>> loadMtl(std::string path) {
 		if (path.find(".obj") != std::string::npos) {
 			path = path.substr(0, path.length() - 3) + "mtl";
 			std::cout << "[mtl] Loading mtl file: " << path << "\n";
 		}
 
-		auto materials = std::make_unique<std::map<std::string, PhongMat>>();
+		auto materials = std::make_unique<std::map<std::string, std::shared_ptr<PhongMat>>>();
 		std::string directry = path.substr(0, path.find_last_of("/\\") + 1);
 
 		std::ifstream file(path);
@@ -54,7 +54,7 @@ public:
 					// add previous albedo map
 					if (diffuseMap != nullptr) {
 						auto texture = textureLoader.create(*diffuseMap, "dM_" + diffuseMap->getPath());
-						materials->at(currentMaterialName).setDiffuseMap(texture);
+						materials->at(currentMaterialName)->setDiffuseMap(texture);
 						diffuseMap = nullptr;
 					}
 
@@ -62,26 +62,26 @@ public:
 					std::istringstream iss(line.substr(7));
 					iss >> currentMaterialName;
 					//std::cout << "Found material: " << currentMaterialName << "\n";
-					PhongMat material(currentMaterialName);
+					auto material = std::make_shared<PhongMat>(currentMaterialName);
 					materials->insert({ currentMaterialName, material });
 				}
 				else if (line[0] == 'N' && line[1] == 's') {
 					float shininess = std::stof(line.substr(3));
-					materials->at(currentMaterialName).setShininess(shininess);
+					materials->at(currentMaterialName)->setShininess(shininess);
 				}
 				else if (line[0] == 'K' && line[1] == 's'){
 					// specular
 					std::istringstream iss(line.substr(3));
 					glm::vec3 specular;
 					iss >> specular.x >> specular.y >> specular.z;
-					materials->at(currentMaterialName).setSpecular(specular);
+					materials->at(currentMaterialName)->setSpecular(specular);
 				}
 				else if (line[0] == 'K' && line[1] == 'd') {
 					// color
 					std::istringstream iss(line.substr(3));
 					glm::vec3 color;
 					iss >> color.x >> color.y >> color.z;
-					materials->at(currentMaterialName).setDiffuse(color);
+					materials->at(currentMaterialName)->setDiffuse(color);
 				}
 				else {
 					auto option = line.substr(0, 6);
@@ -98,7 +98,7 @@ public:
 
 						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setNormalMap(texture);
+							materials->at(currentMaterialName)->setNormalMap(texture);
 						}
 					}
 					else if (option == "map_d ") {
@@ -116,7 +116,7 @@ public:
 						textureData.optimizeAlphaOnly();
 						auto texture = textureLoader.create(textureData, "Ks_" + texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setSpecularMap(texture);
+							materials->at(currentMaterialName)->setSpecularMap(texture);
 						}
 					}
 					else if (option == "map_re") {
@@ -125,7 +125,7 @@ public:
 						std::string texturePath = directry + line.substr(9);
 						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setSpecularMap(texture);
+							materials->at(currentMaterialName)->setSpecularMap(texture);
 						}
 					}
 					else if (option == "map_Pm") {
@@ -133,7 +133,7 @@ public:
 						std::string texturePath = directry + line.substr(7);
 						auto texture = textureLoader.load(texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setSpecularMap(texture);
+							materials->at(currentMaterialName)->setSpecularMap(texture);
 						}
 					}
 					else if (option == "map_Ns") {
@@ -142,7 +142,7 @@ public:
 						textureData.optimizeAlphaOnly();
 						auto texture = textureLoader.create(textureData, "Ns_" + texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setShininessMap(texture);
+							materials->at(currentMaterialName)->setShininessMap(texture);
 						}
 					}
 					else if (option == "map_Pr") {
@@ -153,21 +153,21 @@ public:
 						textureData.invert();
 						auto texture = textureLoader.create(textureData, "Pr_" + texturePath);
 						if (texture->getNrChannels() != 0) {
-							materials->at(currentMaterialName).setShininessMap(texture);
+							materials->at(currentMaterialName)->setShininessMap(texture);
 						}
 					}
 					else if (option == "illum ") {
 						int illum = std::stoi(line.substr(6));
 						if (illum == 4 || illum == 6 || illum == 7 || illum == 9) {
 							// transparency mode
-							materials->at(currentMaterialName).setBlendMode(Material::BlendMode::ALPHA_BLEND);
+							materials->at(currentMaterialName)->setBlendMode(Material::BlendMode::ALPHA_BLEND);
 						}
 					}
 				}
 			}
 			if (diffuseMap != nullptr) {
 				auto texture = textureLoader.create(*diffuseMap, "dM_" + diffuseMap->getPath());
-				materials->at(currentMaterialName).setDiffuseMap(texture);
+				materials->at(currentMaterialName)->setDiffuseMap(texture);
 			}
 		}
 
@@ -182,7 +182,7 @@ public:
 		std::vector<glm::vec2> textureCoords;
 		std::vector<glm::vec3> normals;
 		std::vector<SubMesh> subMeshes = { SubMesh() };
-		std::unique_ptr<std::map<std::string, PhongMat>> materials = nullptr;
+		std::unique_ptr<std::map<std::string, std::shared_ptr<PhongMat>>> materials = nullptr;
 		SubMesh* currentSubMesh = &(subMeshes[0]);
 		unsigned int vertexOffset = 0;
 		unsigned int extraVertexCount = 0;
@@ -388,15 +388,14 @@ public:
 						bool found = false;
 						activeMaterialName = line.substr(7);
 						for (auto& subMesh : subMeshes) {
-							const std::string& curMatName = subMesh.material.getName();
-							if (curMatName.length() == 0 || curMatName == activeMaterialName) {
+							if (subMesh.material == nullptr || subMesh.material->getName() == activeMaterialName) {
 								found = true;
 								currentSubMesh = &subMesh;
 								break;
 							}
 						}
 
-						if (!found || currentSubMesh->material.getName().length() == 0) {
+						if (!found || currentSubMesh->material == nullptr) {
 							// if submesh with desired material not found and current submesh is not empty; else reuse current submesh by applying new material
 							if (!found && (currentSubMesh->elements.size() != 0)) {
 								// create new submesh

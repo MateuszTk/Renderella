@@ -26,9 +26,9 @@ public:
 		nearFarLoc = UniLocation("nearFar", shaderProgram);
 		frameCounterLoc = UniLocation("frameCounter", shaderProgram);
 
-		UniLocation projectionViewLoc = UniLocation("projectionView", shaderProgram);
-		UniLocation viewLoc = UniLocation("view", shaderProgram);
-		UniLocation projectionLoc = UniLocation("projection", shaderProgram);
+		projectionViewLoc = UniLocation("projectionView", shaderProgram);
+		viewLoc = UniLocation("view", shaderProgram);
+		projectionLoc = UniLocation("projection", shaderProgram);
 	}
 
 	Material(const Material& other) 
@@ -37,6 +37,7 @@ public:
 		lightPosLoc(other.lightPosLoc), lightColorLoc(other.lightColorLoc), 
 		lightDirLoc(other.lightDirLoc), lightSpaceMatrixLoc(other.lightSpaceMatrixLoc),
 		usedLightsLoc(other.usedLightsLoc), viewPosLoc(other.viewPosLoc), viewDirLoc(other.viewDirLoc), nearFarLoc(other.nearFarLoc), frameCounterLoc(other.frameCounterLoc),
+		projectionViewLoc(other.projectionViewLoc), viewLoc(other.viewLoc), projectionLoc(other.projectionLoc),
 		blendMode(other.blendMode) {
 
 	}
@@ -60,8 +61,8 @@ public:
 		this->frameCounterLoc.update(shaderProgram);
 
 		{
-			auto newMap = std::unordered_map<UniLocation, std::shared_ptr<Texture>>();
-			for (auto& texture : textures) {
+			auto newMap = ResourceMap<std::shared_ptr<Texture>>();
+			for (auto& texture : textures.map) {
 				newMap[UniLocation(texture.first, shaderProgram)] = texture.second;
 			}
 			this->textures = std::move(newMap);
@@ -69,24 +70,24 @@ public:
 
 		{
 			// Update vec3s by copying them to a new map, because I cannot update the UniLocation objects in the map
-			auto newMap = std::unordered_map<UniLocation, glm::vec3>();
-			for (auto& vect : vec3s) {
+			auto newMap = ResourceMap<glm::vec3>();
+			for (auto& vect : vec3s.map) {
 				newMap[UniLocation(vect.first, shaderProgram)] = vect.second;
 			}
 			this->vec3s = std::move(newMap);
 		}
 
 		{
-			auto newMap = std::unordered_map<UniLocation, float>();
-			for (auto& flt : floats) {
+			auto newMap = ResourceMap<float>();
+			for (auto& flt : floats.map) {
 				newMap[UniLocation(flt.first, shaderProgram)] = flt.second;
 			}
 			this->floats = std::move(newMap);
 		}
 
 		{
-			auto newMap = std::unordered_map<UniLocation, glm::mat4>();
-			for (auto& mat : mat4s) {
+			auto newMap = ResourceMap<glm::mat4>();
+			for (auto& mat : mat4s.map) {
 				newMap[UniLocation(mat.first, shaderProgram)] = mat.second;
 			}
 			this->mat4s = std::move(newMap);
@@ -165,76 +166,115 @@ public:
 		return blendMode;
 	}
 
-	void use() {
+	// with allowResourceReuse = true, the material will not be updated if it was already used in the last frame
+	// some resources will still be updated, when they were changed
+	// when setting allowResourceReuse to true, remember that some changes to the material may not be visible, unless calling resetLastMaterial()
+	void use(bool allowResourceReuse = false) {
 		if (overrideMaterial != nullptr && overrideMaterial.get() != this) {
 			overrideMaterial->use();
 			return;
 		}
 
-		if (shaderProgram == nullptr) { 
+		if (shaderProgram == nullptr) {
 			std::cout << "Material::use() called with shaderProgram = nullptr\n";
 			return;
 		}
 
 		shaderProgram->use();
-		unsigned int i = 0;
-		for (auto& tex : textures) {
-			glActiveTexture(GL_TEXTURE0 + i);
-			tex.second->bind();
-			shaderProgram->setInt(tex.first, i);
-			i++;
-		}
-		for (auto& vect : vec3s) {
-			shaderProgram->setVec3(vect.first, vect.second);
-		}
-		for (auto& flt : floats) {
-			shaderProgram->setFloat(flt.first, flt.second);
-		}
-		for (auto& mat : mat4s) {
-			shaderProgram->setMat4(mat.first, mat.second);
+
+		if (!allowResourceReuse || lastMaterial != this || textures.dirty == true) {
+			unsigned int i = 0;
+			for (auto& tex : textures.map) {
+				glActiveTexture(GL_TEXTURE0 + i);
+				tex.second->bind();
+				shaderProgram->setInt(tex.first, i);
+				i++;
+			}
+			textures.dirty = false;
 		}
 
-		std::vector<glm::mat4> projectionViewMatrices;
-		std::vector<glm::mat4> viewMatrices;
-		std::vector<glm::mat4> projectionMatrices;
-		for (auto& camera : Camera::getActiveCameras()) {
-			projectionViewMatrices.push_back(camera->getCameraMatrix());
-			viewMatrices.push_back(camera->getViewMatrix());
-			projectionMatrices.push_back(camera->getProjectionMatrix());
+		if (!allowResourceReuse || lastMaterial != this || vec3s.dirty == true) {
+			for (auto& vect : vec3s.map) {
+				shaderProgram->setVec3(vect.first, vect.second);
+			}
+			vec3s.dirty = false;
 		}
 
-		shaderProgram->setMat4s(projectionViewLoc, projectionViewMatrices.data(), projectionViewMatrices.size());
-		shaderProgram->setMat4s(viewLoc, viewMatrices.data(), viewMatrices.size());
-		shaderProgram->setMat4s(projectionLoc, projectionMatrices.data(), projectionMatrices.size());
+		if (!allowResourceReuse || lastMaterial != this || floats.dirty == true) {
+			for (auto& flt : floats.map) {
+				shaderProgram->setFloat(flt.first, flt.second);
+			}
+			floats.dirty = false;
+		}
 
-		if (includeLightsUniforms) {
-			shaderProgram->setVec4s(lightPosLoc, Light::getLightPositions(), Light::getMaxLights());
-			shaderProgram->setVec3s(lightColorLoc, Light::getLightColors(), Light::getMaxLights());
-			shaderProgram->setVec3s(lightDirLoc, Light::getLightDirections(), Light::getMaxLights());
-			shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLights() * 4); //TODO
-			shaderProgram->setInt(usedLightsLoc, Light::getUsedLightsCnt());
+		if (!allowResourceReuse || lastMaterial != this || mat4s.dirty == true) {
+			for (auto& mat : mat4s.map) {
+				shaderProgram->setMat4(mat.first, mat.second);
+			}
+			mat4s.dirty = false;
 		}
-		if (includeCameraUniform) {
-			Camera* activeCamera = Camera::getActiveCamera();
-			shaderProgram->setVec3(viewPosLoc, activeCamera->getPosition());
-			shaderProgram->setVec3(viewDirLoc, activeCamera->getDirection());
-			shaderProgram->setVec2(nearFarLoc, glm::vec2(activeCamera->getNearPlane(), activeCamera->getFarPlane()));
+
+		if (!allowResourceReuse || lastMaterial != this) {
+			std::vector<glm::mat4> projectionViewMatrices;
+			std::vector<glm::mat4> viewMatrices;
+			std::vector<glm::mat4> projectionMatrices;
+			for (auto& camera : Camera::getActiveCameras()) {
+				projectionViewMatrices.push_back(camera->getCameraMatrix());
+				viewMatrices.push_back(camera->getViewMatrix());
+				projectionMatrices.push_back(camera->getProjectionMatrix());
+			}
+
+			shaderProgram->setMat4s(projectionViewLoc, projectionViewMatrices.data(), projectionViewMatrices.size());
+			shaderProgram->setMat4s(viewLoc, viewMatrices.data(), viewMatrices.size());
+			shaderProgram->setMat4s(projectionLoc, projectionMatrices.data(), projectionMatrices.size());
+
+			if (includeLightsUniforms) {
+				shaderProgram->setVec4s(lightPosLoc, Light::getLightPositions(), Light::getMaxLights());
+				shaderProgram->setVec3s(lightColorLoc, Light::getLightColors(), Light::getMaxLights());
+				shaderProgram->setVec3s(lightDirLoc, Light::getLightDirections(), Light::getMaxLights());
+				shaderProgram->setMat4s(lightSpaceMatrixLoc, Light::getLightSpaceMatrices(), Light::getMaxLightSpaceMatrices());
+				shaderProgram->setInt(usedLightsLoc, Light::getUsedLightsCnt());
+			}
+			if (includeCameraUniform) {
+				Camera* activeCamera = Camera::getActiveCamera();
+				shaderProgram->setVec3(viewPosLoc, activeCamera->getPosition());
+				shaderProgram->setVec3(viewDirLoc, activeCamera->getDirection());
+				shaderProgram->setVec2(nearFarLoc, glm::vec2(activeCamera->getNearPlane(), activeCamera->getFarPlane()));
+			}
+			if (includeFrameCounterUniform) {
+				shaderProgram->setInt(frameCounterLoc, WindowManager::getFrameCounter());
+			}
 		}
-		if (includeFrameCounterUniform) {
-			shaderProgram->setInt(frameCounterLoc, WindowManager::getFrameCounter());
-		}
+
+		lastMaterial = this;
 	}
 
 	static void setOverrideMaterial(const std::shared_ptr<Material>& material) {
 		overrideMaterial = material;
 	}
 
+	static void resetLastMaterial() {
+		lastMaterial = nullptr;
+	}
+
 protected:
+	template <typename T>
+	struct ResourceMap {
+		std::unordered_map<UniLocation, T> map;
+		bool dirty = true;
+
+		T& operator[](const UniLocation& loc) {
+			dirty = true;
+			return map[loc];
+		}
+	};
+
 	std::shared_ptr<ShaderProgram> shaderProgram;
-	std::unordered_map<UniLocation, std::shared_ptr<Texture>> textures;
-	std::unordered_map<UniLocation, glm::vec3> vec3s;
-	std::unordered_map<UniLocation, float> floats;
-	std::unordered_map<UniLocation, glm::mat4> mat4s;
+	ResourceMap<std::shared_ptr<Texture>> textures;
+	ResourceMap<glm::vec3> vec3s;
+	ResourceMap<float> floats;
+	ResourceMap<glm::mat4> mat4s;
+
 	std::string name;
 	BlendMode blendMode = BlendMode::ALPHA_CLIP;
 	bool includeLightsUniforms = false;
@@ -257,4 +297,5 @@ private:
 	UniLocation projectionLoc = UniLocation("projection", shaderProgram);
 
 	static std::shared_ptr<Material> overrideMaterial;
+	static Material* lastMaterial;
 };

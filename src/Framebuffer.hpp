@@ -69,7 +69,7 @@ public:
 		Shader<GL_FRAGMENT_SHADER> screenFrag(frag, true);
 		auto screenShader = std::make_shared<ShaderProgram>(screenVert, screenFrag);
 
-		Material planeMat(screenShader);
+		std::shared_ptr<Material> planeMat = std::make_shared<Material>(screenShader);
 		SubMesh planeSub(primitives::plane::planeInd, planeMat);
 		return Mesh(primitives::plane::planeVert, { planeSub });
 	}
@@ -80,11 +80,11 @@ public:
 		Shader<GL_FRAGMENT_SHADER> screenFrag(frag, true);
 		auto screenShader = std::make_shared<ShaderProgram>(screenVert, screenFrag);
 
-		Material planeMat(screenShader);
+		std::shared_ptr<Material> planeMat = std::make_shared<Material>(screenShader);
 		for (int i = 0; i < colorTexs.size(); i++) {
-			planeMat.setTexture("screenTexture" + std::to_string(i), colorTexs[i]);
+			planeMat->setTexture("screenTexture" + std::to_string(i), colorTexs[i]);
 		}
-		planeMat.setTexture("depthTexture", depthTex);
+		planeMat->setTexture("depthTexture", depthTex);
 		SubMesh planeSub(primitives::plane::planeInd, planeMat);
 		return Mesh(primitives::plane::planeVert, { planeSub });
 	}
