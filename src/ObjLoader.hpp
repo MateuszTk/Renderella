@@ -175,8 +175,8 @@ public:
 	}
 	
 	// path: path to obj file; material: material template for creating new materials
-	static std::list<Mesh> load(const std::string& path) {
-		std::list<Mesh> meshes;
+	static std::list<std::shared_ptr<Mesh>> load(const std::string& path) {
+		std::list<std::shared_ptr<Mesh>> meshes;
 		std::vector<Vertex> vertices;
 		std::vector<int> verticesDuplicatesLinkedList;
 		std::vector<glm::vec2> textureCoords;
@@ -203,8 +203,8 @@ public:
 			while (std::getline(fileBuffer, line)) {
 				if (line[0] == 'o') {
 					if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
-						meshes.push_back(Mesh(vertices, subMeshes));
-						int submeshCount = meshes.back().getSubmeshes().size();
+						meshes.push_back(std::make_shared<Mesh>(vertices, subMeshes));
+						int submeshCount = meshes.back()->getSubmeshes().size();
 						std::cout << "   [" << meshes.size() << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es), (" : "), (") 
 							<<  vertices.size() - extraVertexCount << " + " << extraVertexCount << " = " << vertices.size() << " : " << (vertices.size() * 100) / (vertices.size() - extraVertexCount) << "% vertices)\n";
 					}
@@ -421,8 +421,8 @@ public:
 		}
 
 		if (subMeshes.size() > 1 || (subMeshes.size() == 1 && subMeshes[0].elements.size() > 0)) {
-			meshes.push_back(Mesh(vertices, subMeshes));
-			int submeshCount = meshes.back().getSubmeshes().size();
+			meshes.push_back(std::make_shared<Mesh>(vertices, subMeshes));
+			int submeshCount = meshes.back()->getSubmeshes().size();
 			std::cout << "   [" << meshes.size() << "] (" << submeshCount << "submesh" << ((submeshCount > 1) ? "es), (" : "), (")
 				<< vertices.size() - extraVertexCount << " + " << extraVertexCount << " = " << vertices.size() << " : " << (vertices.size() * 100) / (vertices.size() - extraVertexCount) << "% vertices)\n";
 		}

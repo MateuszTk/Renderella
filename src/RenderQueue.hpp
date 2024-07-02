@@ -38,12 +38,6 @@ public:
 		this->renderables.insert(this->renderables.end(), renderables.begin(), renderables.end());
 	}
 
-	void add(std::list<Mesh>&& renderables) {
-		for (auto& renderable : renderables) {
-			this->renderables.push_back(std::make_shared<Mesh>(std::move(renderable)));
-		}
-	}
-
 	void remove(const std::shared_ptr<Mesh>& renderable) {
 		renderables.remove(renderable);
 	}

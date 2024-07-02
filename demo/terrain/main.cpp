@@ -18,6 +18,7 @@
 #include "Framebuffer.hpp"
 #include "Primitives.hpp"
 #include "RenderQueue.hpp"
+#include "InstancedMesh.hpp"
 
 #include "WorldGen.hpp"
 
@@ -37,13 +38,24 @@ int main() {
 	roughnessData.invert();
 	phongMat->setShininessMap(std::make_shared<Texture>(roughnessData));
 
-	WorldGen worldGen(8888, 50, 4, phongMat);
+	auto treeData = ObjLoader::load("assets/tree/tree.obj");
+
+	auto treeMesh = treeData.back();
+	auto treeLeaves = treeData.front();
+	Tree tree(treeLeaves, treeMesh);
+
+	WorldGen worldGen(8888, 50, 4, phongMat, tree);
 	auto chunks = worldGen.getChunks();
 	for (auto& chunk : chunks) {
 		renderQueue.add(chunk.second);
 	}
 	worldGen.generateWorld(200);
 
+	auto& trees = worldGen.getTrees();
+	for (auto& tree : trees) {
+		renderQueue.add(tree.second.leaves);
+		renderQueue.add(tree.second.trunk);
+	}
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 

@@ -47,7 +47,7 @@ int main() {
 	//	mesh.setScale(50.0f);
 	//}
 
-	renderQueue.add(std::move(sponza));
+	renderQueue.add(sponza);
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 

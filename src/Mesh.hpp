@@ -24,6 +24,7 @@ public:
 	std::shared_ptr<Material> material;
 
 	friend class Mesh;
+	friend class InstancedMesh;
 private:
 	unsigned int EBO;
 };
@@ -40,6 +41,23 @@ public:
 		glGenBuffers(newSubmeshes.size(), this->EBOs);
 
 		for (int i = 0; i < this->submeshes.size(); i++) {
+			submeshes[i].EBO = (this->EBOs)[i];
+		}
+
+		updateElements();
+		updateModel();
+	}
+
+	Mesh(const Mesh& other) : submeshes(other.submeshes), position(other.position), rotation(other.rotation), scale(other.scale) {
+		moved = false;
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		setVertices(other.vertices);
+
+		this->EBOs = new unsigned int[submeshes.size()];
+		glGenBuffers(submeshes.size(), this->EBOs);
+
+		for (int i = 0; i < submeshes.size(); i++) {
 			submeshes[i].EBO = (this->EBOs)[i];
 		}
 
@@ -103,7 +121,7 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void draw(bool drawAll = true, Material::BlendMode blendModeOnly = Material::BlendMode::ALPHA_CLIP, bool unbind = true, bool allowResourceReuse = false) {
+	virtual void draw(bool drawAll = true, Material::BlendMode blendModeOnly = Material::BlendMode::ALPHA_CLIP, bool unbind = true, bool allowResourceReuse = false) {
 		bool firstDraw = true;
 		for (auto& submesh : this->submeshes) {
 			if (drawAll || submesh.material->getBlendMode() == blendModeOnly) {
@@ -125,15 +143,6 @@ public:
 
 	static void unbind() {
 		glBindVertexArray(0);
-	}
-
-	void clear() {
-		if (!moved) {
-			glDeleteVertexArrays(1, &VAO);
-			glDeleteBuffers(1, &VBO);
-			glDeleteBuffers(submeshes.size(), EBOs);
-			delete[] EBOs;
-		}
 	}
 
 	glm::vec3 getPosition() const {
@@ -168,11 +177,21 @@ public:
 		updateModel();
 	}
 
-	~Mesh() {
+	static glm::mat4 toModelMatrix(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, position);
+		model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, scale);
+		return model;
+	}
+
+	virtual ~Mesh() {
 		clear();
 	}
 
-private:
+protected:
 	unsigned int* EBOs;
 	unsigned int VAO, VBO;
 	std::vector<Vertex> vertices;
@@ -185,11 +204,15 @@ private:
 
 	void updateModel() {
 		//apply transformations
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, this->position);
-		model = glm::rotate(model, glm::radians(this->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::rotate(model, glm::radians(this->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(this->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::scale(model, this->scale);
+		model = toModelMatrix(this->position, this->rotation, this->scale);
+	}
+
+	virtual void clear() {
+		if (!moved) {
+			glDeleteVertexArrays(1, &VAO);
+			glDeleteBuffers(1, &VBO);
+			glDeleteBuffers(submeshes.size(), EBOs);
+			delete[] EBOs;
+		}
 	}
 };

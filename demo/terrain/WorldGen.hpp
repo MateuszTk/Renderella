@@ -2,39 +2,72 @@
 
 #include "Mesh.hpp"
 #include "PerlinNoise.hpp"
-/*
-struct Comparator {
-	size_t operator()(const glm::vec2& k) const {
-		size_t h1 = std::hash<float>()(k.x);
-		size_t h2 = std::hash<float>()(k.y);
-		return h1 ^ h2;
+
+struct Tree {
+	std::shared_ptr<InstancedMesh> trunk;
+	std::shared_ptr<InstancedMesh> leaves;
+
+	Tree()
+		: trunk(nullptr),
+		leaves(nullptr) {
+
 	}
 
-	bool operator()(const glm::vec2& a, const glm::vec2& b) const {
-		return a.x == b.x && a.y == b.y;
+	Tree(const std::shared_ptr<Mesh>& trunk, const std::shared_ptr<Mesh>& leaves) 
+		: trunk(std::make_shared<InstancedMesh>(*trunk, std::vector<glm::mat4>())),
+		leaves(std::make_shared<InstancedMesh>(*leaves, std::vector<glm::mat4>())) {
+
+	}
+
+	Tree(const Tree& tree)
+		: trunk(std::make_shared<InstancedMesh>(*tree.trunk, std::vector<glm::mat4>())),
+		leaves(std::make_shared<InstancedMesh>(*tree.leaves, std::vector<glm::mat4>())) {
+
+	}
+
+	Tree(const Tree&& tree)
+		: trunk(std::move(tree.trunk)),
+		leaves(std::move(tree.leaves)) {
+
+	}
+
+	Tree& operator=(const Tree& tree) {
+		trunk = std::make_shared<InstancedMesh>(*tree.trunk, std::vector<glm::mat4>());
+		leaves = std::make_shared<InstancedMesh>(*tree.leaves, std::vector<glm::mat4>());
+		return *this;
+	}
+
+	void clear() {
+		trunk->clearInstances();
+		leaves->clearInstances();
+	}
+
+	void add(const std::vector<glm::mat4>& models) {
+		trunk->addInstances(models);
+		leaves->addInstances(models);
 	}
 };
 
-using ChunkMap = std::map<glm::vec2, std::shared_ptr<Mesh>, Comparator, Comparator>;
-*/
-
 using ChunkMap = std::map<int, std::shared_ptr<Mesh>>;
+using TreeMap = std::map<int, Tree>;
 
 class WorldGen {
 public:
-	WorldGen(int seed, int chunkSize, int worldSize, std::shared_ptr<Material> material)
+	WorldGen(int seed, int chunkSize, int worldSize, std::shared_ptr<Material> material, const Tree& tree)
 		: seed(seed), chunkSize(chunkSize), worldSize(worldSize), material(material), perlin(seed) {
 		for (int y = 0; y < worldSize; y++) {
 			for (int x = 0; x < worldSize; x++) {
 				SubMesh submesh;
 				submesh.material = material;
 				chunks[x + y * worldSize * chunkSize] = (std::make_shared<Mesh>(std::vector<Vertex>(), std::vector<SubMesh>({submesh})));
+			
+				trees[x + y * worldSize] = tree;
 			}
 		}
 	}
 
 	void generateChunk(glm::ivec2 pos, int vertexCount) {
-		std::shared_ptr<Mesh>& mesh = chunks[pos.x + pos.y * worldSize * chunkSize]; //chunks[pos];
+		std::shared_ptr<Mesh>& mesh = chunks[pos.x + pos.y * worldSize * chunkSize];
 		mesh->setPosition(glm::vec3(pos.x * chunkSize, 0, pos.y * chunkSize));
 
 		std::vector<Vertex>& vertices = mesh->getVertices();
@@ -51,10 +84,9 @@ public:
 				vertex.position.x = (x / (float)(vertexCount - 1)) * chunkSize;
 				vertex.position.z = (y / (float)(vertexCount - 1)) * chunkSize;
 
-				double nx = (vertex.position.x + pos.x * chunkSize) / 10;
-				double ny = (vertex.position.z + pos.y * chunkSize) / 10;
-				vertex.position.y = perlin.octave2D_01(nx, ny, 4) * 10;
-				vertex.position.y *= perlin.octave2D_01(nx * 0.05, ny * 0.05, 4);
+				double nx = (vertex.position.x + pos.x * chunkSize);
+				double ny = (vertex.position.z + pos.y * chunkSize);
+				vertex.position.y = sampleHeight(nx, ny);
 
 				vertex.normal = glm::vec3(0, 0, 0);	
 
@@ -115,6 +147,20 @@ public:
 
 		mesh->updateVertices();
 		mesh->updateElements();
+
+		Tree& tree = trees[pos.x + pos.y * worldSize];
+		tree.clear();
+		std::vector<glm::mat4> instances;
+		for (int i = 0; i < 100; i++) {
+			float x = rand() % chunkSize;
+			float z = rand() % chunkSize;
+			x += pos.x * chunkSize;
+			z += pos.y * chunkSize;
+			float y = sampleHeight(x, z);
+			glm::mat4 model = Mesh::toModelMatrix(glm::vec3(x, y, z), glm::vec3(0, 0, 0), glm::vec3(0.05, 0.05, 0.05));
+			instances.push_back(model);
+		}
+		tree.add(instances);
 	}
 
 	void generateWorld(int vertexCount) {
@@ -129,6 +175,10 @@ public:
 		return chunks;
 	}
 
+	const TreeMap& getTrees() const {
+		return trees;
+	}
+
 private:
 	int seed;
 	int chunkSize;
@@ -138,5 +188,12 @@ private:
 	siv::PerlinNoise perlin;
 
 	ChunkMap chunks;
+	TreeMap trees;
+
+	float sampleHeight(float x, float z) {
+		float h = perlin.octave2D_01(x / 10, z / 10, 4) * 10;
+		h *= perlin.octave2D_01(x * 0.1, z * 0.1, 4);
+		return h;
+	}
 };
 
