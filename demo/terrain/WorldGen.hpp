@@ -25,7 +25,7 @@ struct Tree {
 
 	}
 
-	Tree(const Tree&& tree)
+	Tree(Tree&& tree)
 		: trunk(std::move(tree.trunk)),
 		leaves(std::move(tree.leaves)) {
 

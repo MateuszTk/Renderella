@@ -1,6 +1,10 @@
 
-//#define ENABLE_TEXTURE_CACHE
-//#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+
+// store raw texture data in cache for faster loading
+// #define ENABLE_TEXTURE_CACHE
+// #define CACHE_LOCATION "..\\cache\\"
+
+#define USE_GEOMETRY_SHADER
 
 #include "WindowManager.hpp"
 #include "Shader.hpp"
@@ -30,20 +34,23 @@ int main() {
 
 	RenderQueue renderQueue;
 
+	// Terrain material
 	auto phongMat = std::make_shared<PhongMat>("terrainMat");
 	phongMat->setSpecular(glm::vec3(0.1f, 0.1f, 0.1f));
 	phongMat->setDiffuseMap(std::make_shared<Texture>("assets/patchy-meadow1-bl/patchy-meadow1_albedo.png"));
 	phongMat->setNormalMap(std::make_shared<Texture>("assets/patchy-meadow1-bl/patchy-meadow1_normal-ogl.png"));
+
 	TextureData roughnessData("assets/patchy-meadow1-bl/patchy-meadow1_roughness.png");
 	roughnessData.invert();
 	phongMat->setShininessMap(std::make_shared<Texture>(roughnessData));
 
+	// Tree
 	auto treeData = ObjLoader::load("assets/tree/tree.obj");
-
 	auto treeMesh = treeData.back();
 	auto treeLeaves = treeData.front();
 	Tree tree(treeLeaves, treeMesh);
 
+	// World generation
 	WorldGen worldGen(8888, 50, 4, phongMat, tree);
 	auto chunks = worldGen.getChunks();
 	for (auto& chunk : chunks) {
@@ -56,7 +63,8 @@ int main() {
 		renderQueue.add(tree.second.leaves);
 		renderQueue.add(tree.second.trunk);
 	}
-
+	
+	// Setup scene
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
 
 	Light light(Light::Type::POINT, glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f), 0.5f);
@@ -68,33 +76,48 @@ int main() {
 	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1);
 	Framebuffer composeFramebuffer(window.getWidth(), window.getHeight(), 2);
 
+
+	// Deferred shading config
 	Mesh deferredPlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/deferred.frag");
-	deferredPlane.getSubmeshes()[0].material->setTexture("lightDepthShadowSampler", lightFramebuffer.getDepthTex());
-	deferredPlane.getSubmeshes()[0].material->setTexture("lightDepth", lightFramebuffer.getDepthTex());
-	deferredPlane.getSubmeshes()[0].material->setIncludeLightsUniforms(true);
-	deferredPlane.getSubmeshes()[0].material->setIncludeCameraUniform(true);
+
+	auto deferredMat = deferredPlane.getSubmeshes().front().material;
+	deferredMat->setTexture("lightDepthShadowSampler", lightFramebuffer.getDepthTex());
+	deferredMat->setTexture("lightDepth", lightFramebuffer.getDepthTex());
+	deferredMat->setIncludeLightsUniforms(true);
+	deferredMat->setIncludeCameraUniform(true);
 	auto sky = std::make_shared<Texture>("assets/san_giuseppe_bridge_4k.hdr");
-	deferredPlane.getSubmeshes()[0].material->setTexture("sky", sky);
+	deferredMat->setTexture("sky", sky);
 
+	// Screen space reflections config
 	Mesh screenSpacePlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
-	screenSpacePlane.getSubmeshes()[0].material->setIncludeCameraUniform(true);
-	screenSpacePlane.getSubmeshes()[0].material->setIncludeFrameCounterUniform(true);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevFrame", composeFramebuffer.getColorTexs()[0]);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevSSR", composeFramebuffer.getColorTexs()[1]);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevDepth", composeFramebuffer.getDepthTex());
-	screenSpacePlane.getSubmeshes()[0].material->setMat4("prevProjectionView", glm::mat4(1.0f));
 
+	auto screenSpaceMat = screenSpacePlane.getSubmeshes().front().material;
+	screenSpaceMat->setIncludeCameraUniform(true);
+	screenSpaceMat->setIncludeFrameCounterUniform(true);
+	screenSpaceMat->setTexture("prevFrame", composeFramebuffer.getColorTexs()[0]);
+	screenSpaceMat->setTexture("prevSSR", composeFramebuffer.getColorTexs()[1]);
+	screenSpaceMat->setTexture("prevDepth", composeFramebuffer.getDepthTex());
+	screenSpaceMat->setMat4("prevProjectionView", glm::mat4(1.0f));
+
+	// Compose config
 	Mesh composePlane = Framebuffer::produceEmptyFbPlane("assets/shaders/screen.vert", "assets/shaders/compose.frag");
-	composePlane.getSubmeshes()[0].material->setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("deferredReflection", defferedFramebuffer.getColorTexs()[1]);
-	composePlane.getSubmeshes()[0].material->setTexture("ssrTexture", screenSpaceFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("colorTexture", mainFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("depthTexture", mainFramebuffer.getDepthTex());
 
+	auto composeMat = composePlane.getSubmeshes().front().material;
+	composeMat->setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("deferredReflection", defferedFramebuffer.getColorTexs()[1]);
+	composeMat->setTexture("ssrTexture", screenSpaceFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("colorTexture", mainFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("depthTexture", mainFramebuffer.getDepthTex());
+
+	//Shadow mapping
 	Shader<GL_VERTEX_SHADER> shadowVertexShader("assets/shaders/shadow.vert", true);
 	Shader<GL_FRAGMENT_SHADER> shadowFragmentShader("assets/shaders/shadow.frag", true);
+#ifdef USE_GEOMETRY_SHADER
 	Shader<GL_GEOMETRY_SHADER> shadowGeometryShader("assets/shaders/shadow.geom", true);
 	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader, shadowGeometryShader);
+#else
+	auto shadowProgram = std::make_shared<ShaderProgram>(shadowVertexShader, shadowFragmentShader);
+#endif
 	auto shadowMat = std::make_shared<Material>(shadowProgram);
 
 	glEnable(GL_CULL_FACE);
@@ -109,6 +132,7 @@ int main() {
 
 		// directional light
 		lightFramebuffer.bind(true);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, lightFramebuffer.getDepthTex()->getTexture(), 0);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT);
@@ -118,7 +142,17 @@ int main() {
 
 		sun.use();
 		Material::setOverrideMaterial(shadowMat);
+
+#ifndef USE_GEOMETRY_SHADER
+		for (int layer = 0; layer < DirectionalLight::cascadeCount; layer++) {
+			//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, lightFramebuffer.getDepthTex()->getTexture(), 0);
+			shadowMat->setFloat("layer", layer);
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, lightFramebuffer.getDepthTex()->getTexture(), 0, layer);
+			renderQueue.render();
+		}
+#else
 		renderQueue.render();
+#endif
 		Material::setOverrideMaterial(nullptr);
 
 		// player camera

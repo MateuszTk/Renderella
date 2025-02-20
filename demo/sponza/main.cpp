@@ -1,6 +1,7 @@
 
-//#define ENABLE_TEXTURE_CACHE
-//#define CACHE_LOCATION "C:\\Users\\mateu\\source\\repos\\Renderella\\cache\\"
+// store raw texture data in cache for faster loading
+// #define ENABLE_TEXTURE_CACHE
+// #define CACHE_LOCATION "..\\cache\\"
 
 #include "WindowManager.hpp"
 #include "Shader.hpp"
@@ -28,25 +29,6 @@ int main() {
 	RenderQueue renderQueue;
 
 	auto sponza = ObjLoader::load("assets/sponza/obj/sponza.obj");
-
-	//auto sponza = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\rendererTestScene.obj");
-
-	//auto sponza = ObjLoader::load("C:\\Users\\mateu\\Downloads\\sci-fi-turret\\source\\sci-fi_turret\\sci-fi_turret\\turret.obj");
-	//auto sponza = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\McGuire\\Amazon Lumberyard Bistro\\Exterior\\exterior.obj");
-	//auto sponzaInt = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\McGuire\\Amazon Lumberyard Bistro\\Interior\\interior.obj");
-	//sponza.splice(sponza.end(), std::move(sponzaInt));
-	//for (auto& mesh : sponza) {
-	//	mesh.setScale(0.01f);
-	//}
-
-	//auto sponza = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\v1\\v1.obj");
-	//auto sponza = ObjLoader::load("C:\\Users\\mateu\\Downloads\\transporter-spaceship\\source\\Transporter_Spaceship\\Transporter_Spaceship\\transporterPBR.obj");
-	//auto sponza = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\McGuire\\Vokselia Spawn\\vokselia_spawn\\vokselia_spawn.obj");
-	//auto sponza = ObjLoader::load("F:\\dokumenty\\awesome-3d-meshes\\McGuire\\Lost Empire\\lost-empire\\lost_empire.obj");
-	//for (auto& mesh : sponza) {
-	//	mesh.setScale(50.0f);
-	//}
-
 	renderQueue.add(sponza);
 
 	Camera camera(Camera::ProjectionType::PERSPECTIVE, window.getAspectRatio(), true, glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 65.0f, 100.0f, 0.2f);
@@ -60,29 +42,39 @@ int main() {
 	Framebuffer screenSpaceFramebuffer(window.getWidth() / 2, window.getHeight() / 2, 1);
 	Framebuffer composeFramebuffer(window.getWidth(), window.getHeight(), 2);
 
+	// Deferred shading config
 	Mesh deferredPlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/deferred.frag");
-	deferredPlane.getSubmeshes()[0].material->setTexture("lightDepthShadowSampler", lightFramebuffer.getDepthTex());
-	deferredPlane.getSubmeshes()[0].material->setTexture("lightDepth", lightFramebuffer.getDepthTex());
-	deferredPlane.getSubmeshes()[0].material->setIncludeLightsUniforms(true);
-	deferredPlane.getSubmeshes()[0].material->setIncludeCameraUniform(true);
+	
+	auto deferredMat = deferredPlane.getSubmeshes().front().material;
+	deferredMat->setTexture("lightDepthShadowSampler", lightFramebuffer.getDepthTex());
+	deferredMat->setTexture("lightDepth", lightFramebuffer.getDepthTex());
+	deferredMat->setIncludeLightsUniforms(true);
+	deferredMat->setIncludeCameraUniform(true);
 	auto sky = std::make_shared<Texture>("assets/san_giuseppe_bridge_4k.hdr");
-	deferredPlane.getSubmeshes()[0].material->setTexture("sky", sky);
+	deferredMat->setTexture("sky", sky);
 
+	// Screen space reflections config
 	Mesh screenSpacePlane = mainFramebuffer.produceFbPlane("assets/shaders/screen.vert", "assets/shaders/screen.frag");
-	screenSpacePlane.getSubmeshes()[0].material->setIncludeCameraUniform(true);
-	screenSpacePlane.getSubmeshes()[0].material->setIncludeFrameCounterUniform(true);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevFrame", composeFramebuffer.getColorTexs()[0]);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevSSR", composeFramebuffer.getColorTexs()[1]);
-	screenSpacePlane.getSubmeshes()[0].material->setTexture("prevDepth", composeFramebuffer.getDepthTex());
-	screenSpacePlane.getSubmeshes()[0].material->setMat4("prevProjectionView", glm::mat4(1.0f));
+	
+	auto screenSpaceMat = screenSpacePlane.getSubmeshes().front().material;
+	screenSpaceMat->setIncludeCameraUniform(true);
+	screenSpaceMat->setIncludeFrameCounterUniform(true);
+	screenSpaceMat->setTexture("prevFrame", composeFramebuffer.getColorTexs()[0]);
+	screenSpaceMat->setTexture("prevSSR", composeFramebuffer.getColorTexs()[1]);
+	screenSpaceMat->setTexture("prevDepth", composeFramebuffer.getDepthTex());
+	screenSpaceMat->setMat4("prevProjectionView", glm::mat4(1.0f));
 
+	// Compose config
 	Mesh composePlane = Framebuffer::produceEmptyFbPlane("assets/shaders/screen.vert", "assets/shaders/compose.frag");
-	composePlane.getSubmeshes()[0].material->setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("deferredReflection", defferedFramebuffer.getColorTexs()[1]);
-	composePlane.getSubmeshes()[0].material->setTexture("ssrTexture", screenSpaceFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("colorTexture", mainFramebuffer.getColorTexs()[0]);
-	composePlane.getSubmeshes()[0].material->setTexture("depthTexture", mainFramebuffer.getDepthTex());
+	
+	auto composeMat = composePlane.getSubmeshes().front().material;
+	composeMat->setTexture("deferredLight", defferedFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("deferredReflection", defferedFramebuffer.getColorTexs()[1]);
+	composeMat->setTexture("ssrTexture", screenSpaceFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("colorTexture", mainFramebuffer.getColorTexs()[0]);
+	composeMat->setTexture("depthTexture", mainFramebuffer.getDepthTex());
 
+	// Shadow mapping
 	Shader<GL_VERTEX_SHADER> shadowVertexShader("assets/shaders/shadow.vert", true);
 	Shader<GL_FRAGMENT_SHADER> shadowFragmentShader("assets/shaders/shadow.frag", true);
 	Shader<GL_GEOMETRY_SHADER> shadowGeometryShader("assets/shaders/shadow.geom", true);

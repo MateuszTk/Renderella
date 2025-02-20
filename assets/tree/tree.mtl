@@ -1,0 +1,24 @@
+# Blender 4.3.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Bark_Mat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.063386 0.063386 0.063386
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd textures/Bark_Mat_baseColor.png
+map_Bump -bm 1.000000 textures/Bark_Mat_normal.png
+
+newmtl Cluster_Mat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.077958 0.077958 0.077958
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd textures/Cluster_Mat_baseColor.png
+map_d textures/Cluster_Mat_baseColor.png
+map_Bump -bm 1.000000 textures/Cluster_Mat_normal.png
