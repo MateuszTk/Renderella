@@ -4,51 +4,21 @@
 #include "Mesh.hpp"
 
 class RenderQueue {
+
 public:
-	RenderQueue() {
 
-	}
+	RenderQueue() = default;
 
-	void render() {
-		Material::resetLastMaterial();
-		for (auto& mesh : renderables) {
-			mesh->draw(false, Material::BlendMode::ALPHA_CLIP, false, true);
-		}
-		Mesh::unbind();
+	void render();
 
-		glDepthMask(GL_FALSE);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	void add(const std::shared_ptr<Mesh>& renderable);
+	void add(const std::list<std::shared_ptr<Mesh>>& renderables);
 
-		Material::resetLastMaterial();
-		for (auto& mesh : renderables) {
-			mesh->draw(false, Material::BlendMode::ALPHA_BLEND, false, true);
-		}
-		Mesh::unbind();
+	void remove(const std::shared_ptr<Mesh>& renderable);
 
-		glDisable(GL_BLEND);
-		glDepthMask(GL_TRUE);
-	}
+	void clear();
 
-	void add(const std::shared_ptr<Mesh>& renderable) {
-		this->renderables.push_back(renderable);
-	}
-
-	void add(const std::list<std::shared_ptr<Mesh>>& renderables) {
-		this->renderables.insert(this->renderables.end(), renderables.begin(), renderables.end());
-	}
-
-	void remove(const std::shared_ptr<Mesh>& renderable) {
-		renderables.remove(renderable);
-	}
-
-	void clear() {
-		this->renderables.clear();
-	}
-
-	const std::list<std::shared_ptr<Mesh>>& getRenderables() const {
-		return this->renderables;
-	}
+	const std::list<std::shared_ptr<Mesh>>& getRenderables() const;
 
 private:
 	std::list<std::shared_ptr<Mesh>> renderables;

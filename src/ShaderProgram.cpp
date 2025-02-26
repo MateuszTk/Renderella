@@ -1,6 +1,71 @@
+
 #include "ShaderProgram.hpp"
 
-ShaderProgram* ShaderProgram::currentProgram = nullptr;
+ShaderProgram::ShaderProgram(const Shader<GL_VERTEX_SHADER>& vertexShader, const Shader<GL_FRAGMENT_SHADER>& fragmentShader) {
+	this->master = true;
+	this->id = glCreateProgram();
+	glAttachShader(this->id, vertexShader.getId());
+	glAttachShader(this->id, fragmentShader.getId());
+	glLinkProgram(this->id);
+
+	int success;
+	char infoLog[512];
+	glGetProgramiv(this->id, GL_LINK_STATUS, &success);
+
+	if (!success) {
+		glGetProgramInfoLog(this->id, 512, NULL, infoLog);
+		std::cout << "Error linking shader program\n" << infoLog << '\n';
+	}
+}
+
+ShaderProgram::ShaderProgram(const Shader<GL_VERTEX_SHADER>& vertexShader, const Shader<GL_FRAGMENT_SHADER>& fragmentShader, const Shader<GL_GEOMETRY_SHADER>& geometryShader) {
+	this->master = true;
+	this->id = glCreateProgram();
+	glAttachShader(this->id, vertexShader.getId());
+	glAttachShader(this->id, fragmentShader.getId());
+	glAttachShader(this->id, geometryShader.getId());
+	glLinkProgram(this->id);
+
+	int success;
+	char infoLog[512];
+	glGetProgramiv(this->id, GL_LINK_STATUS, &success);
+
+	if (!success) {
+		glGetProgramInfoLog(this->id, 512, NULL, infoLog);
+		std::cout << "Error linking shader program\n" << infoLog << '\n';
+	}
+}
+
+ShaderProgram::ShaderProgram(ShaderProgram&& other) {
+	this->id = other.id;
+	this->master = true;
+	other.master = false;
+}
+
+ShaderProgram::~ShaderProgram() {
+	if (master) {
+		glDeleteProgram(this->id);
+	}
+}
+
+unsigned int ShaderProgram::getId() const {
+	return this->id;
+}
+
+const ShaderProgram& ShaderProgram::use() {
+	if (currentProgram != this) {
+		glUseProgram(this->id);
+		currentProgram = this;
+	}
+	return *this;
+}
+
+ShaderProgram* ShaderProgram::getCurrentProgram() {
+	if (currentProgram == nullptr) {
+		std::cout << "Warning: No shader program is currently in use\n";
+	}
+	return currentProgram;
+}
 
 void ShaderProgram::setInt(const UniLocation& location, int value) {
 	int locationId = location.getLocation();
@@ -67,3 +132,5 @@ void ShaderProgram::setMat4s(const UniLocation& location, glm::mat4* values, int
 	if (locationId >= 0)
 		glUniformMatrix4fv(location.getLocation(), size, GL_FALSE, glm::value_ptr(values[0]));
 }
+
+ShaderProgram* ShaderProgram::currentProgram = nullptr;
